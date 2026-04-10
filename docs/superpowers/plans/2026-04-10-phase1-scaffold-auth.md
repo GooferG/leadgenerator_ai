@@ -22,7 +22,7 @@
 | `src/app/admin/page.tsx` | Admin-only placeholder |
 | `src/app/api/auth/[...nextauth]/route.ts` | NextAuth route handler |
 | `src/auth.ts` | NextAuth config: providers, signIn/jwt/session callbacks |
-| `src/middleware.ts` | Route protection: unauthenticated→/login, unapproved→/pending, non-admin→/dashboard |
+| `src/proxy.ts` | Route protection: unauthenticated→/login, unapproved→/pending, non-admin→/dashboard (Next.js 16: `middleware.ts` was renamed to `proxy.ts`) |
 | `src/lib/supabase.ts` | Supabase client (anon) + supabaseAdmin (service role) |
 | `src/types/next-auth.d.ts` | Extend NextAuth Session/JWT types with `approved`, `role`, `id` |
 | `supabase/migrations/001_initial.sql` | `users` and `leads` table DDL |
