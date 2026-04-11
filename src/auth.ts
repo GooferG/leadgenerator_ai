@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import { supabaseAdmin } from '@/lib/supabase'
+import { sendNewUserNotification } from '@/lib/email'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -36,6 +37,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (error) {
           console.error('Failed to create user in DB:', error)
           return false
+        }
+
+        // Notify admin of new sign-up (non-admin users only)
+        if (!isAdmin) {
+          await sendNewUserNotification({ name: user.name ?? null, email })
         }
       }
 
