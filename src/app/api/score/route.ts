@@ -42,7 +42,9 @@ Respond ONLY with valid JSON, no markdown:
       messages: [{ role: 'user', content: prompt }],
     })
 
-    const text = (message.content[0] as { type: string; text: string }).text
+    const raw = (message.content[0] as { type: string; text: string }).text
+    // Strip markdown code fences if the model adds them despite instructions
+    const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
     const result: ScoreResult = JSON.parse(text)
     return NextResponse.json(result)
   } catch (err) {

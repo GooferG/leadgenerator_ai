@@ -21,6 +21,7 @@ export function SearchClient({
     new Set(initialSavedPlaceIds)
   )
   const [scoringId, setScoringId] = useState<string | null>(null)
+  const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -52,6 +53,7 @@ export function SearchClient({
 
   async function handleScore(result: ScoredResult) {
     setScoringId(result.placeId)
+    setScoreErrors((prev) => { const next = { ...prev }; delete next[result.placeId]; return next })
 
     const res = await fetch('/api/score', {
       method: 'POST',
@@ -61,7 +63,11 @@ export function SearchClient({
 
     setScoringId(null)
 
-    if (!res.ok) return
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+      setScoreErrors((prev) => ({ ...prev, [result.placeId]: body.error ?? 'Scoring failed' }))
+      return
+    }
 
     const scoreData: ScoreResult = await res.json()
     setResults((prev) =>
@@ -172,6 +178,7 @@ export function SearchClient({
             const isScoring = scoringId === result.placeId
             const isSaving = savingId === result.placeId
             const scored = result.scoreData
+            const scoreError = scoreErrors[result.placeId]
 
             return (
               <div
@@ -248,6 +255,12 @@ export function SearchClient({
                     )}
                   </div>
                 </div>
+
+                {scoreError && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-red-600">
+                    Scoring failed: {scoreError}
+                  </div>
+                )}
 
                 {scored && (
                   <div className="mt-3 pt-3 border-t border-slate-100">
