@@ -1,7 +1,5 @@
 import Link from 'next/link'
 import { signOut } from '@/auth'
-import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 interface NavProps {
   userRole: 'user' | 'admin'
@@ -9,35 +7,37 @@ interface NavProps {
 
 export function Nav({ userRole }: NavProps) {
   return (
-    <nav className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between shrink-0">
-      <Link href="/dashboard" className="font-bold text-sm">
+    <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm px-6 h-14 flex items-center justify-between shrink-0">
+      <Link
+        href="/dashboard"
+        className="font-heading font-bold text-sm tracking-tight text-zinc-100 hover:text-emerald-400 transition-colors"
+      >
         Lead Generator
       </Link>
-      <div className="flex items-center gap-4">
+
+      <div className="flex items-center gap-1">
         <Link
           href="/dashboard"
-          className="text-sm text-slate-400 hover:text-white transition-colors"
+          className="text-sm px-3 py-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 rounded-md transition-colors"
         >
           Dashboard
         </Link>
         <Link
           href="/search"
-          className={cn(
-            buttonVariants({ size: 'sm' }),
-            'bg-indigo-600 hover:bg-indigo-700 text-white border-0'
-          )}
+          className="text-sm px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold rounded-md transition-colors"
         >
           Search
         </Link>
         {userRole === 'admin' && (
           <Link
             href="/admin"
-            className="text-sm text-slate-400 hover:text-white transition-colors"
+            className="text-sm px-3 py-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 rounded-md transition-colors"
           >
             Admin
           </Link>
         )}
       </div>
+
       <form
         action={async () => {
           'use server'
@@ -46,7 +46,7 @@ export function Nav({ userRole }: NavProps) {
       >
         <button
           type="submit"
-          className="text-sm text-slate-400 hover:text-white transition-colors"
+          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-1"
         >
           Sign out
         </button>

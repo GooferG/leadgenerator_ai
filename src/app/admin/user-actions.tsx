@@ -44,14 +44,14 @@ export function UserActions({
           <button
             onClick={() => handleAction('approve')}
             disabled={loading}
-            className="text-xs px-3 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="text-xs px-3 py-1 rounded-md bg-emerald-500 text-zinc-950 font-semibold hover:bg-emerald-400 disabled:opacity-50 transition-colors"
           >
             Approve
           </button>
           <button
             onClick={() => handleAction('reject')}
             disabled={loading}
-            className="text-xs px-3 py-1 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            className="text-xs px-3 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-red-900/40 hover:text-red-400 hover:border-red-900/50 disabled:opacity-50 transition-colors"
           >
             Reject
           </button>
@@ -62,7 +62,7 @@ export function UserActions({
         <button
           onClick={() => handleAction('revoke')}
           disabled={loading}
-          className="text-xs px-3 py-1 rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          className="text-xs px-3 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-amber-900/40 hover:text-amber-400 hover:border-amber-900/50 disabled:opacity-50 transition-colors"
         >
           Revoke
         </button>
@@ -72,17 +72,17 @@ export function UserActions({
         <button
           onClick={() => handleAction('approve')}
           disabled={loading}
-          className="text-xs px-3 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+          className="text-xs px-3 py-1 rounded-md bg-emerald-500 text-zinc-950 font-semibold hover:bg-emerald-400 disabled:opacity-50 transition-colors"
         >
           Approve
         </button>
       )}
 
       {loading && (
-        <span className="text-xs text-slate-400">Saving…</span>
+        <span className="text-xs text-zinc-600">Saving…</span>
       )}
       {error && (
-        <span className="text-xs text-red-600">{error}</span>
+        <span className="text-xs text-red-400">{error}</span>
       )}
     </div>
   )

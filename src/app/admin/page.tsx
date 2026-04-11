@@ -37,7 +37,7 @@ function Avatar({ user }: { user: AppUser }) {
     .join('')
     .toUpperCase()
   return (
-    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600 shrink-0">
+    <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-400 shrink-0">
       {initials}
     </div>
   )
@@ -54,25 +54,25 @@ function UserRow({
 }) {
   const isSelf = user.id === sessionUserId
   return (
-    <div className="flex items-center justify-between py-3 px-4 bg-white border border-slate-200 rounded-lg">
+    <div className="flex items-center justify-between py-3 px-4 bg-zinc-900 border border-zinc-800 rounded-xl">
       <div className="flex items-center gap-3 min-w-0">
         <Avatar user={user} />
         <div className="min-w-0">
-          <div className="text-sm font-medium text-slate-900 truncate">
+          <div className="text-sm font-medium text-zinc-100 truncate">
             {user.name ?? '—'}
             {isSelf && (
-              <span className="ml-2 text-xs text-slate-400 font-normal">You</span>
+              <span className="ml-2 text-xs text-zinc-600 font-normal">You</span>
             )}
           </div>
-          <div className="text-xs text-slate-500 truncate">{user.email}</div>
+          <div className="text-xs text-zinc-500 truncate">{user.email}</div>
         </div>
       </div>
       <div className="flex items-center gap-4 ml-4 shrink-0">
-        <span className="text-xs text-slate-400 hidden sm:block">
+        <span className="text-xs text-zinc-600 hidden sm:block">
           {formatDate(user.created_at)}
         </span>
         {isSelf ? (
-          <span className="text-xs text-slate-400 italic">No actions</span>
+          <span className="text-xs text-zinc-600 italic">No actions</span>
         ) : (
           <UserActions userId={user.id} userState={userState} />
         )}
@@ -96,11 +96,12 @@ function Section({
 }) {
   return (
     <div className="mb-8">
-      <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-        {title} ({users.length})
+      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+        {title}{' '}
+        <span className="text-zinc-700">({users.length})</span>
       </h2>
       {users.length === 0 ? (
-        <p className="text-sm text-slate-400 py-4 text-center border border-dashed border-slate-200 rounded-lg">
+        <p className="text-sm text-zinc-600 py-4 text-center border border-dashed border-zinc-800 rounded-xl">
           {emptyMessage}
         </p>
       ) : (
@@ -135,9 +136,11 @@ export default async function AdminPage() {
   const rejected = users.filter((u) => u.role === 'rejected')
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold text-slate-900 mb-1">User Management</h1>
-      <p className="text-sm text-slate-500 mb-8">
+    <div className="max-w-3xl mx-auto p-6 animate-fade-up">
+      <h1 className="font-heading text-2xl font-bold text-zinc-100 mb-1">
+        User Management
+      </h1>
+      <p className="text-sm text-zinc-500 mb-8">
         Approve or reject access requests. Revoke access from existing users.
       </p>
 

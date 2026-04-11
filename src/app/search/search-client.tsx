@@ -8,6 +8,9 @@ interface ScoredResult extends PlaceResult {
   scoreData?: ScoreResult
 }
 
+const inputCls =
+  'flex-1 min-w-[160px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-colors'
+
 export function SearchClient({
   initialSavedPlaceIds,
 }: {
@@ -20,6 +23,8 @@ export function SearchClient({
   const [savedPlaceIds, setSavedPlaceIds] = useState(
     new Set(initialSavedPlaceIds)
   )
+  // placeId → leadId, so we can patch scoring data back after a late score
+  const [savedLeadIds, setSavedLeadIds] = useState<Record<string, string>>({})
   const [scoringId, setScoringId] = useState<string | null>(null)
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
@@ -53,7 +58,11 @@ export function SearchClient({
 
   async function handleScore(result: ScoredResult) {
     setScoringId(result.placeId)
-    setScoreErrors((prev) => { const next = { ...prev }; delete next[result.placeId]; return next })
+    setScoreErrors((prev) => {
+      const next = { ...prev }
+      delete next[result.placeId]
+      return next
+    })
 
     const res = await fetch('/api/score', {
       method: 'POST',
@@ -65,7 +74,10 @@ export function SearchClient({
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: 'Unknown error' }))
-      setScoreErrors((prev) => ({ ...prev, [result.placeId]: body.error ?? 'Scoring failed' }))
+      setScoreErrors((prev) => ({
+        ...prev,
+        [result.placeId]: body.error ?? 'Scoring failed',
+      }))
       return
     }
 
@@ -75,6 +87,21 @@ export function SearchClient({
         r.placeId === result.placeId ? { ...r, scoreData } : r
       )
     )
+
+    // If this lead was already saved, write the scoring data back to the DB
+    const leadId = savedLeadIds[result.placeId]
+    if (leadId) {
+      await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          score: scoreData.score,
+          score_label: scoreData.scoreLabel,
+          reasoning: scoreData.reasoning,
+          pitch: scoreData.pitch,
+        }),
+      })
+    }
   }
 
   async function handleSave(result: ScoredResult) {
@@ -99,19 +126,27 @@ export function SearchClient({
 
     setSavingId(null)
 
-    // 201 = saved, 409 = already saved — both mean it's in the pipeline
     if (res.ok || res.status === 409) {
       setSavedPlaceIds((prev) => new Set([...prev, result.placeId]))
+      if (res.ok) {
+        const saved = await res.json().catch(() => null)
+        if (saved?.id) {
+          setSavedLeadIds((prev) => ({ ...prev, [result.placeId]: saved.id }))
+        }
+      }
     }
   }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-6">Find Leads</h1>
+      <h1 className="font-heading text-2xl font-bold text-zinc-100 mb-6">
+        Find Leads
+      </h1>
 
+      {/* Search form */}
       <form
         onSubmit={handleSearch}
-        className="bg-white border border-slate-200 rounded-lg p-4 flex gap-3 mb-6 flex-wrap"
+        className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex gap-3 mb-6 flex-wrap"
       >
         <input
           type="text"
@@ -119,7 +154,7 @@ export function SearchClient({
           value={businessType}
           onChange={(e) => setBusinessType(e.target.value)}
           required
-          className="flex-1 min-w-[160px] border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={inputCls}
         />
         <input
           type="text"
@@ -127,12 +162,12 @@ export function SearchClient({
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           required
-          className="flex-1 min-w-[160px] border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={inputCls}
         />
         <select
           value={radius}
           onChange={(e) => setRadius(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-colors"
         >
           <option value="1mi">1 mile</option>
           <option value="5mi">5 miles</option>
@@ -145,34 +180,37 @@ export function SearchClient({
       </form>
 
       {searchError && (
-        <div className="text-red-600 text-sm mb-4 bg-red-50 border border-red-200 rounded-md px-4 py-3">
+        <div className="text-red-400 text-sm mb-4 bg-red-900/20 border border-red-900/40 rounded-lg px-4 py-3">
           {searchError}
         </div>
       )}
 
+      {/* Skeleton */}
       {searching && (
         <div className="flex flex-col gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="bg-white border border-slate-200 rounded-lg p-4 animate-pulse"
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 animate-pulse"
             >
-              <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
-              <div className="h-3 bg-slate-100 rounded w-1/2" />
+              <div className="h-4 bg-zinc-800 rounded w-1/3 mb-2" />
+              <div className="h-3 bg-zinc-800/70 rounded w-1/2" />
             </div>
           ))}
         </div>
       )}
 
       {!searching && hasSearched && results.length === 0 && !searchError && (
-        <p className="text-slate-500 text-sm text-center py-8">
+        <p className="text-zinc-500 text-sm text-center py-10">
           No results found. Try a different search.
         </p>
       )}
 
       {!searching && results.length > 0 && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-slate-500">{results.length} results</p>
+          <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+            {results.length} results
+          </p>
           {results.map((result) => {
             const isSaved = savedPlaceIds.has(result.placeId)
             const isScoring = scoringId === result.placeId
@@ -183,17 +221,17 @@ export function SearchClient({
             return (
               <div
                 key={result.placeId}
-                className="bg-white border border-slate-200 rounded-lg p-4"
+                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="font-medium text-slate-900">{result.name}</div>
-                    <div className="text-sm text-slate-500">{result.address}</div>
-                    <div className="flex gap-3 mt-1 flex-wrap items-center">
+                    <div className="font-medium text-zinc-100">{result.name}</div>
+                    <div className="text-sm text-zinc-500 mt-0.5">{result.address}</div>
+                    <div className="flex gap-3 mt-2 flex-wrap items-center">
                       {result.phone && (
                         <a
                           href={`tel:${result.phone}`}
-                          className="text-xs text-indigo-600 hover:underline"
+                          className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                         >
                           {result.phone}
                         </a>
@@ -203,17 +241,17 @@ export function SearchClient({
                           href={result.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-indigo-600 hover:underline truncate max-w-[200px]"
+                          className="text-xs text-emerald-400 hover:text-emerald-300 truncate max-w-[200px] transition-colors"
                         >
                           {result.website}
                         </a>
                       ) : (
-                        <span className="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-red-900/30 text-red-400 border border-red-900/40 px-2 py-0.5 rounded-full">
                           No website
                         </span>
                       )}
                       {result.rating && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-zinc-500">
                           ⭐ {result.rating} ({result.reviewCount})
                         </span>
                       )}
@@ -222,13 +260,14 @@ export function SearchClient({
                           href={result.mapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-slate-400 hover:text-slate-600"
+                          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
                         >
                           Maps ↗
                         </a>
                       )}
                     </div>
                   </div>
+
                   <div className="flex gap-2 shrink-0">
                     {!scored && (
                       <Button
@@ -241,7 +280,7 @@ export function SearchClient({
                       </Button>
                     )}
                     {isSaved ? (
-                      <span className="text-xs text-green-600 font-medium self-center">
+                      <span className="text-xs text-emerald-400 font-medium self-center">
                         Saved ✓
                       </span>
                     ) : (
@@ -257,31 +296,29 @@ export function SearchClient({
                 </div>
 
                 {scoreError && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-red-600">
+                  <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-red-400">
                     Scoring failed: {scoreError}
                   </div>
                 )}
 
                 {scored && (
-                  <div className="mt-3 pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="mt-3 pt-3 border-t border-zinc-800">
+                    <div className="flex items-center gap-2 mb-2">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
                           scored.score === 'hot'
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-amber-900/40 text-amber-400 border-amber-800/50'
                             : scored.score === 'warm'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-yellow-900/40 text-yellow-400 border-yellow-800/50'
+                            : 'bg-blue-900/40 text-blue-400 border-blue-800/50'
                         }`}
                       >
                         {scored.score}
                       </span>
-                      <span className="text-xs text-slate-500">
-                        {scored.scoreLabel}
-                      </span>
+                      <span className="text-xs text-zinc-400">{scored.scoreLabel}</span>
                     </div>
-                    <p className="text-xs text-slate-600 mb-2">{scored.reasoning}</p>
-                    <div className="bg-slate-50 rounded px-3 py-2 text-xs text-slate-700 italic">
+                    <p className="text-xs text-zinc-400 mb-2.5">{scored.reasoning}</p>
+                    <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2.5 text-xs text-zinc-300 italic">
                       &ldquo;{scored.pitch}&rdquo;
                     </div>
                   </div>

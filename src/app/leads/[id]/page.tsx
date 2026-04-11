@@ -4,11 +4,12 @@ import { notFound } from 'next/navigation'
 import { Lead, Score } from '@/types/lead'
 import Link from 'next/link'
 import { LeadActions } from './lead-actions'
+import { ScoreButton } from './score-button'
 
 const SCORE_BADGE: Record<Score, string> = {
-  hot: 'bg-green-100 text-green-800',
-  warm: 'bg-yellow-100 text-yellow-800',
-  cold: 'bg-red-100 text-red-800',
+  hot: 'bg-amber-900/40 text-amber-400 border border-amber-800/50',
+  warm: 'bg-yellow-900/40 text-yellow-400 border border-yellow-800/50',
+  cold: 'bg-blue-900/40 text-blue-400 border border-blue-800/50',
 }
 
 export default async function LeadDetailPage({
@@ -31,25 +32,25 @@ export default async function LeadDetailPage({
   const lead = data as Lead
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-6 animate-fade-up">
       <Link
         href="/dashboard"
-        className="text-sm text-slate-500 hover:text-slate-700 mb-4 inline-block"
+        className="text-sm text-zinc-500 hover:text-zinc-300 mb-5 inline-block transition-colors"
       >
-        ← Back to Dashboard
+        ← Dashboard
       </Link>
 
       {/* Header */}
       <div className="flex items-start gap-3 mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-slate-900">{lead.name}</h1>
-          <p className="text-slate-500">{lead.address}</p>
+          <h1 className="font-heading text-2xl font-bold text-zinc-100">
+            {lead.name}
+          </h1>
+          <p className="text-zinc-500 mt-0.5">{lead.address}</p>
         </div>
         {lead.score && (
           <span
-            className={`mt-1 text-sm px-3 py-1 rounded-full font-medium shrink-0 ${
-              SCORE_BADGE[lead.score]
-            }`}
+            className={`mt-1 text-xs px-2.5 py-1 rounded-full font-medium shrink-0 border ${SCORE_BADGE[lead.score]}`}
           >
             {lead.score}
           </span>
@@ -57,39 +58,39 @@ export default async function LeadDetailPage({
       </div>
 
       {/* Contact info */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 mb-4">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3">
+        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
           Contact
         </h2>
         <div className="flex flex-col gap-2">
           {lead.phone ? (
             <a
               href={`tel:${lead.phone}`}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               📞 {lead.phone}
             </a>
           ) : (
-            <span className="text-sm text-slate-400">No phone listed</span>
+            <span className="text-sm text-zinc-600">No phone listed</span>
           )}
           {lead.website ? (
             <a
               href={lead.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-indigo-600 hover:underline break-all"
+              className="text-sm text-emerald-400 hover:text-emerald-300 break-all transition-colors"
             >
               🌐 {lead.website}
             </a>
           ) : (
-            <span className="text-sm text-slate-400">No website</span>
+            <span className="text-sm text-zinc-600">No website</span>
           )}
           {lead.maps_url && (
             <a
               href={lead.maps_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-slate-500 hover:text-slate-700"
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               📍 View on Google Maps
             </a>
@@ -98,31 +99,48 @@ export default async function LeadDetailPage({
       </div>
 
       {/* AI Analysis */}
-      {lead.score && (
-        <div className="bg-white border border-slate-200 rounded-lg p-4 mb-4">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-            AI Analysis
-          </h2>
-          {lead.score_label && (
-            <div className="text-sm font-medium text-slate-700 mb-2">
-              {lead.score_label}
-            </div>
-          )}
-          {lead.reasoning && (
-            <p className="text-sm text-slate-600 mb-3">{lead.reasoning}</p>
-          )}
-          {lead.pitch && (
-            <div className="bg-slate-50 rounded-md px-4 py-3">
-              <div className="text-xs text-slate-400 mb-1 uppercase tracking-wide">
-                Suggested pitch
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3">
+        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          AI Analysis
+        </h2>
+        {lead.score ? (
+          <>
+            {lead.score_label && (
+              <div className="text-sm font-medium text-zinc-200 mb-2">
+                {lead.score_label}
               </div>
-              <p className="text-sm text-slate-700 italic">
-                &ldquo;{lead.pitch}&rdquo;
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+            {lead.reasoning && (
+              <p className="text-sm text-zinc-400 mb-3">{lead.reasoning}</p>
+            )}
+            {lead.pitch && (
+              <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-4 py-3">
+                <div className="text-xs text-zinc-500 mb-1.5 uppercase tracking-wider">
+                  Suggested pitch
+                </div>
+                <p className="text-sm text-zinc-300 italic">
+                  &ldquo;{lead.pitch}&rdquo;
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-zinc-500 mb-3">
+              No score yet. Run AI analysis to evaluate this lead.
+            </p>
+            <ScoreButton
+              lead={{
+                id: lead.id,
+                name: lead.name,
+                address: lead.address ?? null,
+                website: lead.website ?? null,
+                phone: lead.phone ?? null,
+              }}
+            />
+          </>
+        )}
+      </div>
 
       {/* Pipeline actions */}
       <LeadActions
