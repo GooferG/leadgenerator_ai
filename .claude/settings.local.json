@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npx shadcn@latest init --defaults -y)",
-      "Bash(npx tsc:*)",
-      "Bash(bash \"C:/Users/luizm/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh\" --project-dir \"C:/Users/luizm/Desktop/Software_Engineer/Projects/leadgenerator\")"
-    ]
-  }
-}
