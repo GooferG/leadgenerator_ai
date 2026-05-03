@@ -1,3 +1,73 @@
+# SaaS Landing Page Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace the minimal `src/app/page.tsx` with a full single-page SaaS marketing site including Nav, Hero, Screenshot Slider, Features, Testimonials, Pricing, CTA, and Footer.
+
+**Architecture:** Single `src/app/page.tsx` file rewritten as a `"use client"` component. Auto-rotating screenshot slider uses `useState` + `useEffect`. All sections use existing Tailwind v4 utility classes and the app's existing dark theme tokens (emerald accent, DM Sans/Syne fonts). No new dependencies.
+
+**Tech Stack:** Next.js App Router, React 19, Tailwind v4, shadcn/ui button component, lucide-react icons
+
+---
+
+## File Map
+
+| Action | File | Responsibility |
+|--------|------|----------------|
+| Modify | `src/app/page.tsx` | Full landing page — all sections in one file |
+| Create | `public/images/screenshots/` | Directory for 9 screenshot images |
+
+---
+
+### Task 1: Add screenshot images
+
+**Files:**
+- Create: `public/images/screenshots/` (directory + images)
+
+- [ ] **Step 1: Create the screenshots directory**
+
+```bash
+mkdir -p public/images/screenshots
+```
+
+- [ ] **Step 2: Copy your 9 screenshot files into `public/images/screenshots/`**
+
+Name them exactly:
+```
+screenshot-1.png
+screenshot-2.png
+screenshot-3.png
+screenshot-4.png
+screenshot-5.png
+screenshot-6.png
+screenshot-7.png
+screenshot-8.png
+screenshot-9.png
+```
+
+Any image format works (`.png`, `.jpg`, `.webp`) — just update the extension in Task 2 if not `.png`.
+
+- [ ] **Step 3: Verify they're accessible**
+
+Start the dev server (`npm run dev`) and open `http://localhost:3000/images/screenshots/screenshot-1.png` in your browser. You should see your image.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add public/images/screenshots/
+git commit -m "feat: add app screenshots for landing page"
+```
+
+---
+
+### Task 2: Build the landing page
+
+**Files:**
+- Modify: `src/app/page.tsx`
+
+- [ ] **Step 1: Replace `src/app/page.tsx` with the full landing page**
+
+```tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -7,17 +77,7 @@ import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
 import { Search, Bot, LayoutDashboard } from 'lucide-react'
 
-const SCREENSHOTS = [
-  { src: '/images/screenshots/homepage.jpg', alt: 'Homepage' },
-  { src: '/images/screenshots/login.jpg', alt: 'Login' },
-  { src: '/images/screenshots/search.jpg', alt: 'Search' },
-  { src: '/images/screenshots/search-filled.jpg', alt: 'Search results' },
-  { src: '/images/screenshots/search-list.jpg', alt: 'Search list' },
-  { src: '/images/screenshots/lead-list.jpg', alt: 'Lead list' },
-  { src: '/images/screenshots/lead-review.jpg', alt: 'Lead review' },
-  { src: '/images/screenshots/business-detail.jpg', alt: 'Business detail' },
-  { src: '/images/screenshots/wait-approval.jpg', alt: 'Waiting for approval' },
-]
+const SCREENSHOTS = Array.from({ length: 9 }, (_, i) => `/images/screenshots/screenshot-${i + 1}.png`)
 
 const FEATURES = [
   {
@@ -76,8 +136,8 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <span className="font-heading text-lg font-bold text-primary">⚡ Lead Scout</span>
           <div className="flex items-center gap-6">
-            <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Features</a>
-            <a href="#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Pricing</a>
+            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
             <Link href="/login" className={cn(buttonVariants({ size: 'sm' }), 'px-4')}>
               Sign In
             </Link>
@@ -87,6 +147,7 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-28 text-center">
+        {/* Dot grid */}
         <div
           className="absolute inset-0 opacity-40"
           style={{
@@ -94,6 +155,7 @@ export default function LandingPage() {
             backgroundSize: '28px 28px',
           }}
         />
+        {/* Radial glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_-10%,oklch(0.22_0.06_162/0.25),transparent)]" />
 
         <div className="relative z-10 max-w-2xl">
@@ -135,8 +197,8 @@ export default function LandingPage() {
           <div className="relative overflow-hidden rounded-xl border border-border shadow-2xl">
             <Image
               key={current}
-              src={SCREENSHOTS[current].src}
-              alt={SCREENSHOTS[current].alt}
+              src={SCREENSHOTS[current]}
+              alt={`App screenshot ${current + 1}`}
               width={1200}
               height={750}
               className="w-full object-cover"
@@ -144,6 +206,7 @@ export default function LandingPage() {
             />
           </div>
 
+          {/* Dots */}
           <div className="mt-4 flex items-center justify-center gap-1.5">
             {SCREENSHOTS.map((_, i) => (
               <button
@@ -258,13 +321,13 @@ export default function LandingPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-border/40 px-6 py-28 text-center">
+      <section className="relative border-t border-border/40 overflow-hidden px-6 py-28 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_110%,oklch(0.22_0.06_162/0.2),transparent)]" />
         <div className="relative z-10 mx-auto max-w-xl">
           <h2 className="font-heading mb-4 text-4xl font-extrabold text-foreground">Ready to find your next client?</h2>
           <p className="mb-8 text-muted-foreground">Join freelancers already using Lead Scout to grow their business.</p>
           <Link href="/login" className={cn(buttonVariants({ size: 'lg' }), 'px-10')}>
-            Get Started — It&apos;s Free
+            Get Started — It's Free
           </Link>
         </div>
       </section>
@@ -274,11 +337,72 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Lead Scout</p>
           <div className="flex gap-4">
-            <a href="#" className="text-xs text-muted-foreground transition-colors hover:text-foreground">Privacy</a>
-            <a href="#" className="text-xs text-muted-foreground transition-colors hover:text-foreground">Terms</a>
+            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</a>
           </div>
         </div>
       </footer>
     </div>
   )
 }
+```
+
+- [ ] **Step 2: Verify the page renders without errors**
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`. You should see the full landing page with nav, hero, slider (cycling screenshots), features, testimonials, pricing, CTA, and footer. No console errors.
+
+- [ ] **Step 3: Verify the slider works**
+
+Watch the screenshot area for ~10 seconds. Images should rotate automatically every 3 seconds. Clicking dots should jump to that slide.
+
+- [ ] **Step 4: Verify nav anchor links**
+
+Click "Features" in the nav — page should scroll to the features section. Click "Pricing" — should scroll to pricing section.
+
+- [ ] **Step 5: Verify all CTAs link correctly**
+
+- "Get Started Free" (hero) → `/login`
+- "Sign In" (nav) → `/login`
+- "Get Started Free" (pricing Free tier) → `/login`
+- "Coming Soon" button → disabled, does not navigate
+
+- [ ] **Step 6: Run type check**
+
+```bash
+npx tsc --noEmit
+```
+
+Expected: no errors.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/app/page.tsx
+git commit -m "feat: replace landing page with full SaaS marketing page"
+```
+
+---
+
+### Task 3: Add .gitignore entry for brainstorm files
+
+**Files:**
+- Modify: `.gitignore`
+
+- [ ] **Step 1: Add `.superpowers/` to `.gitignore`**
+
+Open `.gitignore` and add this line:
+
+```
+.superpowers/
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add .gitignore
+git commit -m "chore: ignore .superpowers brainstorm session files"
+```
