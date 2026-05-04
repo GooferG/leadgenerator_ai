@@ -13,12 +13,24 @@ export interface PlaceResult {
   mapsUrl: string
 }
 
+// Structured content extracted from a scraped homepage
+export interface SiteContent {
+  title: string | null
+  description: string | null
+  hasViewport: boolean
+  ogTags: Record<string, string>
+  bodyText: string
+}
+
 // Shape returned by POST /api/score (from Claude)
 export interface ScoreResult {
   score: Score
   scoreLabel: string
   reasoning: string
   pitch: string
+  pitchBullets?: string[]
+  siteAudit?: string[]
+  scrapeError?: boolean
 }
 
 // Shape of a row in the Supabase leads table
@@ -37,5 +49,7 @@ export interface Lead {
   status: LeadStatus
   notes: string | null
   maps_url: string | null
+  site_audit: string[] | null
+  scrape_error: boolean | null
   created_at: string
 }
