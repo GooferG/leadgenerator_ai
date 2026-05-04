@@ -26,6 +26,8 @@ export function SearchClient({
   // placeId → leadId, so we can patch scoring data back after a late score
   const [savedLeadIds, setSavedLeadIds] = useState<Record<string, string>>({})
   const [scoringId, setScoringId] = useState<string | null>(null)
+  const [scoringPhase, setScoringPhase] = useState<'crawling' | 'scoring' | null>(null)
+  const [scrapeNotices, setScrapeNotices] = useState<Record<string, string>>({})
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
@@ -58,19 +60,49 @@ export function SearchClient({
 
   async function handleScore(result: ScoredResult) {
     setScoringId(result.placeId)
+    setScoringPhase(null)
     setScoreErrors((prev) => {
       const next = { ...prev }
       delete next[result.placeId]
       return next
     })
+    setScrapeNotices((prev) => {
+      const next = { ...prev }
+      delete next[result.placeId]
+      return next
+    })
+
+    let siteContent = undefined
+
+    if (result.website) {
+      setScoringPhase('crawling')
+      const scrapeRes = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: result.website }),
+      })
+      const scrapeData = await scrapeRes.json()
+
+      if (scrapeData.error) {
+        setScrapeNotices((prev) => ({
+          ...prev,
+          [result.placeId]: "Couldn't crawl site — scoring with available data instead",
+        }))
+      } else {
+        siteContent = scrapeData.content
+      }
+    }
+
+    setScoringPhase('scoring')
 
     const res = await fetch('/api/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...result, businessType }),
+      body: JSON.stringify({ ...result, businessType, siteContent }),
     })
 
     setScoringId(null)
+    setScoringPhase(null)
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: 'Unknown error' }))
@@ -88,7 +120,6 @@ export function SearchClient({
       )
     )
 
-    // If this lead was already saved, write the scoring data back to the DB
     const leadId = savedLeadIds[result.placeId]
     if (leadId) {
       await fetch(`/api/leads/${leadId}`, {
@@ -99,6 +130,8 @@ export function SearchClient({
           score_label: scoreData.scoreLabel,
           reasoning: scoreData.reasoning,
           pitch: scoreData.pitch,
+          site_audit: scoreData.siteAudit ?? null,
+          scrape_error: scoreData.scrapeError ?? null,
         }),
       })
     }
@@ -276,7 +309,11 @@ export function SearchClient({
                         onClick={() => handleScore(result)}
                         disabled={isScoring}
                       >
-                        {isScoring ? '…' : '✦ Score'}
+                        {isScoring
+                          ? scoringPhase === 'crawling'
+                            ? 'Crawling…'
+                            : 'Scoring…'
+                          : '✦ Score'}
                       </Button>
                     )}
                     {isSaved ? (
@@ -301,6 +338,12 @@ export function SearchClient({
                   </div>
                 )}
 
+                {scrapeNotices[result.placeId] && (
+                  <div className="mt-2 text-xs text-yellow-400/80 bg-yellow-900/10 border border-yellow-900/30 rounded-lg px-3 py-2">
+                    {scrapeNotices[result.placeId]}
+                  </div>
+                )}
+
                 {scored && (
                   <div className="mt-3 pt-3 border-t border-zinc-800">
                     <div className="flex items-center gap-2 mb-2">
@@ -318,9 +361,29 @@ export function SearchClient({
                       <span className="text-xs text-zinc-400">{scored.scoreLabel}</span>
                     </div>
                     <p className="text-xs text-zinc-400 mb-2.5">{scored.reasoning}</p>
-                    <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2.5 text-xs text-zinc-300 italic">
+                    <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2.5 text-xs text-zinc-300 italic mb-2.5">
                       &ldquo;{scored.pitch}&rdquo;
                     </div>
+                    {scored.pitchBullets && scored.pitchBullets.length > 0 && (
+                      <ul className="mb-2.5 pl-4 list-disc space-y-1">
+                        {scored.pitchBullets.map((bullet, i) => (
+                          <li key={i} className="text-xs text-zinc-400">{bullet}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {scored.siteAudit && scored.siteAudit.length > 0 && (
+                      <details className="group">
+                        <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors list-none flex items-center gap-1">
+                          <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                          Site Audit ({scored.siteAudit.length} findings)
+                        </summary>
+                        <ul className="mt-2 pl-4 list-disc space-y-1">
+                          {scored.siteAudit.map((finding, i) => (
+                            <li key={i} className="text-xs text-zinc-500">{finding}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                   </div>
                 )}
               </div>
