@@ -72,7 +72,7 @@ export function SearchClient({
     const res = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pageToken: nextPageToken }),
+      body: JSON.stringify({ businessType, location, pageToken: nextPageToken }),
     })
 
     setLoadingMore(false)

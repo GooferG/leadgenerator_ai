@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const { businessType, location, pageToken } = await req.json()
 
-  if (!pageToken && (!businessType?.trim() || !location?.trim())) {
+  if (!businessType?.trim() || !location?.trim()) {
     return NextResponse.json(
       { error: 'businessType and location are required' },
       { status: 400 }

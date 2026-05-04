@@ -20,9 +20,11 @@ export async function searchPlaces(
   location: string,
   pageToken?: string
 ): Promise<{ results: PlaceResult[]; nextPageToken: string | null }> {
-  const body: Record<string, unknown> = pageToken
-    ? { pageToken }
-    : { textQuery: `${businessType} in ${location}`, maxResultCount: 20 }
+  const body: Record<string, unknown> = {
+    textQuery: `${businessType} in ${location}`,
+    maxResultCount: 20,
+    ...(pageToken ? { pageToken } : {}),
+  }
 
   const res = await fetch(PLACES_URL, {
     method: 'POST',
