@@ -114,7 +114,7 @@ export default async function LeadDetailPage({
               <p className="text-sm text-zinc-400 mb-3">{lead.reasoning}</p>
             )}
             {lead.pitch && (
-              <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-4 py-3">
+              <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-4 py-3 mb-3">
                 <div className="text-xs text-zinc-500 mb-1.5 uppercase tracking-wider">
                   Suggested pitch
                 </div>
@@ -122,6 +122,24 @@ export default async function LeadDetailPage({
                   &ldquo;{lead.pitch}&rdquo;
                 </p>
               </div>
+            )}
+            {lead.site_audit && lead.site_audit.length > 0 && (
+              <details className="group">
+                <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors list-none flex items-center gap-1">
+                  <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                  Site Audit ({lead.site_audit.length} findings)
+                </summary>
+                <ul className="mt-2 pl-4 list-disc space-y-1">
+                  {lead.site_audit.map((finding: string, i: number) => (
+                    <li key={i} className="text-xs text-zinc-500">{finding}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {lead.scrape_error && (
+              <p className="text-xs text-yellow-400/80 mt-2">
+                Site couldn&apos;t be crawled when this lead was scored — audit data unavailable.
+              </p>
             )}
           </>
         ) : (
