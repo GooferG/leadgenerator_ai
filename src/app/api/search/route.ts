@@ -8,9 +8,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { businessType, location } = await req.json()
+  const { businessType, location, pageToken } = await req.json()
 
-  if (!businessType?.trim() || !location?.trim()) {
+  if (!pageToken && (!businessType?.trim() || !location?.trim())) {
     return NextResponse.json(
       { error: 'businessType and location are required' },
       { status: 400 }
@@ -18,8 +18,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const results = await searchPlaces(businessType.trim(), location.trim())
-    return NextResponse.json(results)
+    const { results, nextPageToken } = await searchPlaces(
+      businessType?.trim() ?? '',
+      location?.trim() ?? '',
+      pageToken ?? undefined
+    )
+    return NextResponse.json({ results, nextPageToken })
   } catch (err) {
     console.error('Places search error:', err)
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })

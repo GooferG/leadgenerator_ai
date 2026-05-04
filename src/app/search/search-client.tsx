@@ -31,6 +31,8 @@ export function SearchClient({
   const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
 
@@ -39,6 +41,7 @@ export function SearchClient({
     setSearching(true)
     setSearchError(null)
     setResults([])
+    setNextPageToken(null)
     setHasSearched(true)
 
     const res = await fetch('/api/search', {
@@ -54,8 +57,34 @@ export function SearchClient({
       return
     }
 
-    const data: PlaceResult[] = await res.json()
-    setResults(data)
+    const data: { results: PlaceResult[]; nextPageToken: string | null } = await res.json()
+    setResults(data.results)
+    setNextPageToken(data.nextPageToken)
+  }
+
+  async function handleLoadMore() {
+    if (!nextPageToken) return
+    setLoadingMore(true)
+
+    // Google requires ~2s between page requests
+    await new Promise((r) => setTimeout(r, 2000))
+
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pageToken: nextPageToken }),
+    })
+
+    setLoadingMore(false)
+
+    if (!res.ok) {
+      setSearchError('Failed to load more results.')
+      return
+    }
+
+    const data: { results: PlaceResult[]; nextPageToken: string | null } = await res.json()
+    setResults((prev) => [...prev, ...data.results])
+    setNextPageToken(data.nextPageToken)
   }
 
   async function handleScore(result: ScoredResult) {
@@ -389,6 +418,17 @@ export function SearchClient({
               </div>
             )
           })}
+          {nextPageToken && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading…' : 'Load more results'}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

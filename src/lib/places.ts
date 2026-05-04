@@ -16,8 +16,13 @@ const FIELD_MASK = [
 
 export async function searchPlaces(
   businessType: string,
-  location: string
-): Promise<PlaceResult[]> {
+  location: string,
+  pageToken?: string
+): Promise<{ results: PlaceResult[]; nextPageToken: string | null }> {
+  const body: Record<string, unknown> = pageToken
+    ? { pageToken }
+    : { textQuery: `${businessType} in ${location}`, maxResultCount: 20 }
+
   const res = await fetch(PLACES_URL, {
     method: 'POST',
     headers: {
@@ -25,10 +30,7 @@ export async function searchPlaces(
       'X-Goog-Api-Key': process.env.GOOGLE_PLACES_API_KEY!,
       'X-Goog-FieldMask': FIELD_MASK,
     },
-    body: JSON.stringify({
-      textQuery: `${businessType} in ${location}`,
-      maxResultCount: 20,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
@@ -37,7 +39,7 @@ export async function searchPlaces(
 
   const data = await res.json()
 
-  return (data.places ?? []).map((p: any): PlaceResult => ({
+  const results = (data.places ?? []).map((p: any): PlaceResult => ({
     placeId: p.id,
     name: p.displayName?.text ?? 'Unknown',
     address: p.formattedAddress ?? '',
@@ -47,4 +49,6 @@ export async function searchPlaces(
     reviewCount: p.userRatingCount ?? null,
     mapsUrl: p.googleMapsUri ?? '',
   }))
+
+  return { results, nextPageToken: data.nextPageToken ?? null }
 }
