@@ -27,7 +27,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const update: Record<string, string | null> = {}
+  const update: Record<string, unknown> = {}
   if (body.status !== undefined) update.status = body.status
   if (body.notes !== undefined) update.notes = body.notes
   // Score fields — written back when a saved lead gets scored in the search UI
@@ -35,6 +35,8 @@ export async function PATCH(
   if (body.score_label !== undefined) update.score_label = body.score_label
   if (body.reasoning !== undefined) update.reasoning = body.reasoning
   if (body.pitch !== undefined) update.pitch = body.pitch
+  if (body.site_audit !== undefined) update.site_audit = body.site_audit
+  if (body.scrape_error !== undefined) update.scrape_error = body.scrape_error
 
   const { data, error } = await supabaseAdmin
     .from('leads')
