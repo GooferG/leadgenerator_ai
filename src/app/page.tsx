@@ -5,19 +5,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { Search, Bot, LayoutDashboard } from 'lucide-react'
 
 const SCREENSHOTS = [
-  { src: '/images/screenshots/homepage.jpg', alt: 'Homepage' },
-  { src: '/images/screenshots/login.jpg', alt: 'Login' },
-  { src: '/images/screenshots/search.jpg', alt: 'Search' },
-  { src: '/images/screenshots/search-filled.jpg', alt: 'Search results' },
-  { src: '/images/screenshots/search-list.jpg', alt: 'Search list' },
-  { src: '/images/screenshots/lead-list.jpg', alt: 'Lead list' },
-  { src: '/images/screenshots/lead-review.jpg', alt: 'Lead review' },
-  { src: '/images/screenshots/business-detail.jpg', alt: 'Business detail' },
-  { src: '/images/screenshots/wait-approval.jpg', alt: 'Waiting for approval' },
+  { base: 'hook-dashboard', alt: 'Dashboard' },
+  { base: 'hook-search',    alt: 'Search' },
+  { base: 'hook-lead',      alt: 'Lead detail' },
 ]
 
 const FEATURES = [
@@ -69,6 +62,22 @@ const TRUST_SIGNALS = [
 
 export default function LandingPage() {
   const [current, setCurrent] = useState(0)
+  const [dark, setDark] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('hook-theme')
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isDark = saved ? saved === 'dark' : prefersDark
+    setDark(isDark)
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [])
+
+  function toggleTheme() {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('hook-theme', next ? 'dark' : 'light')
+  }
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -90,7 +99,13 @@ export default function LandingPage() {
               Sign in
             </Link>
           </div>
-          <ThemeToggle />
+          <button
+            onClick={toggleTheme}
+            className="size-8 rounded-full border border-border hover:bg-secondary transition-colors flex items-center justify-center text-sm"
+            aria-label="Toggle theme"
+          >
+            {dark ? '☾' : '☀'}
+          </button>
         </div>
       </nav>
 
@@ -141,13 +156,14 @@ export default function LandingPage() {
 
           <div className="relative overflow-hidden rounded-2xl border border-border shadow-2xl">
             <Image
-              key={current}
-              src={SCREENSHOTS[current].src}
+              key={`${current}-${dark}`}
+              src={`/images/screenshots/${SCREENSHOTS[current].base}-${dark ? 'dark' : 'light'}.png`}
               alt={SCREENSHOTS[current].alt}
               width={1200}
               height={750}
               className="w-full object-cover"
-              priority={current === 0}
+              priority
+              loading="eager"
             />
           </div>
 
