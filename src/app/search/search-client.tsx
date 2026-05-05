@@ -3,13 +3,20 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { PlaceResult, ScoreResult } from '@/types/lead'
+import { cn } from '@/lib/utils'
 
 interface ScoredResult extends PlaceResult {
   scoreData?: ScoreResult
 }
 
 const inputCls =
-  'flex-1 min-w-[160px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-colors'
+  'flex-1 min-w-[160px] bg-background border border-border rounded-full px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors'
+
+const SCORE_BADGE_CLS = {
+  hot: 'bg-[var(--score-hot-bg)] text-[var(--score-hot-fg)]',
+  warm: 'bg-[var(--score-warm-bg)] text-[var(--score-warm-fg)]',
+  cold: 'bg-[var(--score-cold-bg)] text-[var(--score-cold-fg)] border border-[var(--score-cold-border)]',
+}
 
 export function SearchClient({
   initialSavedPlaceIds,
@@ -23,7 +30,6 @@ export function SearchClient({
   const [savedPlaceIds, setSavedPlaceIds] = useState(
     new Set(initialSavedPlaceIds)
   )
-  // placeId → leadId, so we can patch scoring data back after a late score
   const [savedLeadIds, setSavedLeadIds] = useState<Record<string, string>>({})
   const [scoringId, setScoringId] = useState<string | null>(null)
   const [scoringPhase, setScoringPhase] = useState<'crawling' | 'scoring' | null>(null)
@@ -137,7 +143,7 @@ export function SearchClient({
       const body = await res.json().catch(() => ({ error: 'Unknown error' }))
       setScoreErrors((prev) => ({
         ...prev,
-        [result.placeId]: body.error ?? 'Scoring failed',
+        [result.placeId]: body.error ?? "Couldn't score this one — try again?",
       }))
       return
     }
@@ -201,14 +207,14 @@ export function SearchClient({
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="font-heading text-2xl font-bold text-zinc-100 mb-6">
-        Find Leads
+      <h1 className="font-sans text-2xl font-semibold tracking-tight text-foreground mb-6">
+        New search
       </h1>
 
       {/* Search form */}
       <form
         onSubmit={handleSearch}
-        className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex gap-3 mb-6 flex-wrap"
+        className="bg-card border border-border rounded-2xl p-4 flex gap-3 mb-6 flex-wrap"
       >
         <input
           type="text"
@@ -229,7 +235,7 @@ export function SearchClient({
         <select
           value={radius}
           onChange={(e) => setRadius(e.target.value)}
-          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-colors"
+          className="bg-background border border-border rounded-full px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors"
         >
           <option value="1mi">1 mile</option>
           <option value="5mi">5 miles</option>
@@ -242,7 +248,7 @@ export function SearchClient({
       </form>
 
       {searchError && (
-        <div className="text-red-400 text-sm mb-4 bg-red-900/20 border border-red-900/40 rounded-lg px-4 py-3">
+        <div className="text-destructive text-sm mb-4 bg-destructive/10 border border-destructive/20 rounded-2xl px-4 py-3">
           {searchError}
         </div>
       )}
@@ -253,24 +259,24 @@ export function SearchClient({
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 animate-pulse"
+              className="bg-card border border-border rounded-2xl p-4 animate-pulse"
             >
-              <div className="h-4 bg-zinc-800 rounded w-1/3 mb-2" />
-              <div className="h-3 bg-zinc-800/70 rounded w-1/2" />
+              <div className="h-4 bg-secondary rounded-full w-1/3 mb-2" />
+              <div className="h-3 bg-secondary/70 rounded-full w-1/2" />
             </div>
           ))}
         </div>
       )}
 
       {!searching && hasSearched && results.length === 0 && !searchError && (
-        <p className="text-zinc-500 text-sm text-center py-10">
+        <p className="text-muted-foreground text-sm text-center py-10">
           No results found. Try a different search.
         </p>
       )}
 
       {!searching && results.length > 0 && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
             {results.length} results
           </p>
           {results.map((result) => {
@@ -283,17 +289,17 @@ export function SearchClient({
             return (
               <div
                 key={result.placeId}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors"
+                className="bg-card border border-border rounded-2xl p-4 hover:bg-secondary transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="font-medium text-zinc-100">{result.name}</div>
-                    <div className="text-sm text-zinc-500 mt-0.5">{result.address}</div>
+                    <div className="font-medium text-foreground">{result.name}</div>
+                    <div className="text-sm text-muted-foreground mt-0.5">{result.address}</div>
                     <div className="flex gap-3 mt-2 flex-wrap items-center">
                       {result.phone && (
                         <a
                           href={`tel:${result.phone}`}
-                          className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                          className="text-xs text-foreground hover:text-muted-foreground transition-colors"
                         >
                           {result.phone}
                         </a>
@@ -303,17 +309,17 @@ export function SearchClient({
                           href={result.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-emerald-400 hover:text-emerald-300 truncate max-w-[200px] transition-colors"
+                          className="text-xs text-foreground hover:text-muted-foreground truncate max-w-50 transition-colors"
                         >
                           {result.website}
                         </a>
                       ) : (
-                        <span className="text-xs bg-red-900/30 text-red-400 border border-red-900/40 px-2 py-0.5 rounded-full">
+                        <span className="text-xs border border-border text-muted-foreground px-2 py-0.5 rounded-full">
                           No website
                         </span>
                       )}
                       {result.rating && (
-                        <span className="text-xs text-zinc-500">
+                        <span className="text-xs text-muted-foreground">
                           ⭐ {result.rating} ({result.reviewCount})
                         </span>
                       )}
@@ -322,7 +328,7 @@ export function SearchClient({
                           href={result.mapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                         >
                           Maps ↗
                         </a>
@@ -346,8 +352,8 @@ export function SearchClient({
                       </Button>
                     )}
                     {isSaved ? (
-                      <span className="text-xs text-emerald-400 font-medium self-center">
-                        Saved ✓
+                      <span className="text-xs text-muted-foreground font-medium self-center flex items-center gap-1">
+                        Saved <span className="text-foreground">✓</span>
                       </span>
                     ) : (
                       <Button
@@ -355,60 +361,57 @@ export function SearchClient({
                         onClick={() => handleSave(result)}
                         disabled={isSaving}
                       >
-                        {isSaving ? '…' : '+ Save'}
+                        {isSaving ? '…' : 'Save'}
                       </Button>
                     )}
                   </div>
                 </div>
 
                 {scoreError && (
-                  <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-red-400">
-                    Scoring failed: {scoreError}
+                  <div className="mt-3 pt-3 border-t border-border text-xs text-destructive">
+                    {scoreError}
                   </div>
                 )}
 
                 {scrapeNotices[result.placeId] && (
-                  <div className="mt-2 text-xs text-yellow-400/80 bg-yellow-900/10 border border-yellow-900/30 rounded-lg px-3 py-2">
+                  <div className="mt-2 text-xs text-muted-foreground bg-secondary border border-border rounded-xl px-3 py-2">
                     {scrapeNotices[result.placeId]}
                   </div>
                 )}
 
                 {scored && (
-                  <div className="mt-3 pt-3 border-t border-zinc-800">
+                  <div className="mt-3 pt-3 border-t border-border">
                     <div className="flex items-center gap-2 mb-2">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
-                          scored.score === 'hot'
-                            ? 'bg-amber-900/40 text-amber-400 border-amber-800/50'
-                            : scored.score === 'warm'
-                            ? 'bg-yellow-900/40 text-yellow-400 border-yellow-800/50'
-                            : 'bg-blue-900/40 text-blue-400 border-blue-800/50'
-                        }`}
+                        className={cn(
+                          'text-xs px-2.5 py-1 rounded-full font-medium',
+                          SCORE_BADGE_CLS[scored.score as keyof typeof SCORE_BADGE_CLS] ?? ''
+                        )}
                       >
                         {scored.score}
                       </span>
-                      <span className="text-xs text-zinc-400">{scored.scoreLabel}</span>
+                      <span className="text-xs text-muted-foreground">{scored.scoreLabel}</span>
                     </div>
-                    <p className="text-xs text-zinc-400 mb-2.5">{scored.reasoning}</p>
-                    <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2.5 text-xs text-zinc-300 italic mb-2.5">
+                    <p className="text-xs text-muted-foreground mb-2.5">{scored.reasoning}</p>
+                    <div className="bg-secondary border border-border rounded-xl px-3 py-2.5 text-xs text-foreground mb-2.5">
                       &ldquo;{scored.pitch}&rdquo;
                     </div>
                     {scored.pitchBullets && scored.pitchBullets.length > 0 && (
                       <ul className="mb-2.5 pl-4 list-disc space-y-1">
                         {scored.pitchBullets.map((bullet, i) => (
-                          <li key={i} className="text-xs text-zinc-400">{bullet}</li>
+                          <li key={i} className="text-xs text-muted-foreground">{bullet}</li>
                         ))}
                       </ul>
                     )}
                     {scored.siteAudit && scored.siteAudit.length > 0 && (
                       <details className="group">
-                        <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors list-none flex items-center gap-1">
+                        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1">
                           <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                          Site Audit ({scored.siteAudit.length} findings)
+                          Site audit ({scored.siteAudit.length} findings)
                         </summary>
                         <ul className="mt-2 pl-4 list-disc space-y-1">
                           {scored.siteAudit.map((finding, i) => (
-                            <li key={i} className="text-xs text-zinc-500">{finding}</li>
+                            <li key={i} className="text-xs text-muted-foreground">{finding}</li>
                           ))}
                         </ul>
                       </details>

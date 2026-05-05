@@ -1,22 +1,22 @@
 import type { Metadata } from 'next'
-import { DM_Sans, Syne } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 import { auth } from '@/auth'
 import { Nav } from '@/components/nav'
 import './globals.css'
 
-const dmSans = DM_Sans({
-  variable: '--font-dm-sans',
+const geist = Geist({
+  variable: '--font-geist',
   subsets: ['latin'],
 })
 
-const syne = Syne({
-  variable: '--font-syne',
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
   subsets: ['latin'],
 })
 
 export const metadata: Metadata = {
-  title: 'Lead Generator',
-  description: 'Find local businesses that need websites',
+  title: 'Hook',
+  description: 'Stop pitching. Start hooking.',
 }
 
 export default async function RootLayout({
@@ -30,7 +30,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${syne.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {showNav && <Nav userRole={session!.user.role} />}

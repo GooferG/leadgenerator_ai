@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Hook — Screen Renderer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #2a2a2a; font-family: 'Geist', system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  #root { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px; }
+  .screen-wrap { box-shadow: 0 0 0 1px rgba(255,255,255,0.05); }
+  .label { color: #999; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 8px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="hook-screens.jsx"></script>
+
+<script type="text/babel">
+const SCREENS = [
+  ['01-landing-light',         'Landing · Light',     H_Landing,        'light'],
+  ['01-landing-dark',          'Landing · Dark',      H_Landing,        'dark'],
+  ['02-login-light',           'Login · Light',       H_Login,          'light'],
+  ['02-login-dark',            'Login · Dark',        H_Login,          'dark'],
+  ['03-pending-light',         'Pending · Light',     H_Pending,        'light'],
+  ['03-pending-dark',          'Pending · Dark',      H_Pending,        'dark'],
+  ['04-dashboard-empty-light', 'Dashboard empty · Light', H_DashEmpty,  'light'],
+  ['04-dashboard-empty-dark',  'Dashboard empty · Dark',  H_DashEmpty,  'dark'],
+  ['05-dashboard-light',       'Dashboard · Light',   H_Dash,           'light'],
+  ['05-dashboard-dark',        'Dashboard · Dark',    H_Dash,           'dark'],
+  ['06-search-initial-light',  'Search · Light',      H_SearchInitial,  'light'],
+  ['06-search-initial-dark',   'Search · Dark',       H_SearchInitial,  'dark'],
+  ['07-search-loading-light',  'Search loading · Light', H_SearchLoading, 'light'],
+  ['07-search-loading-dark',   'Search loading · Dark',  H_SearchLoading, 'dark'],
+  ['08-search-results-light',  'Search results · Light', H_SearchResults, 'light'],
+  ['08-search-results-dark',   'Search results · Dark',  H_SearchResults, 'dark'],
+  ['09-search-scored-light',   'Search scored · Light',  H_SearchScored,  'light'],
+  ['09-search-scored-dark',    'Search scored · Dark',   H_SearchScored,  'dark'],
+  ['10-lead-detail-light',     'Lead detail · Light', H_LeadDetail,     'light'],
+  ['10-lead-detail-dark',      'Lead detail · Dark',  H_LeadDetail,     'dark'],
+  ['11-admin-light',           'Admin · Light',       H_Admin,          'light'],
+  ['11-admin-dark',            'Admin · Dark',        H_Admin,          'dark'],
+];
+
+window.SCREENS = SCREENS;
+
+function App() {
+  return (
+    <div>
+      {SCREENS.map(([id, label, Comp, mode]) => (
+        <React.Fragment key={id}>
+          <div className="label">{id}.png — {label}</div>
+          <div className="screen-wrap" id={id} data-screen>
+            <Comp mode={mode} />
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

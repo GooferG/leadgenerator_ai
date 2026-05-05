@@ -5,11 +5,26 @@ import { Lead, Score } from '@/types/lead'
 import Link from 'next/link'
 import { LeadActions } from './lead-actions'
 import { ScoreButton } from './score-button'
+import { cn } from '@/lib/utils'
 
 const SCORE_BADGE: Record<Score, string> = {
-  hot: 'bg-amber-900/40 text-amber-400 border border-amber-800/50',
-  warm: 'bg-yellow-900/40 text-yellow-400 border border-yellow-800/50',
-  cold: 'bg-blue-900/40 text-blue-400 border border-blue-800/50',
+  hot: 'bg-[var(--score-hot-bg)] text-[var(--score-hot-fg)]',
+  warm: 'bg-[var(--score-warm-bg)] text-[var(--score-warm-fg)]',
+  cold: 'bg-[var(--score-cold-bg)] text-[var(--score-cold-fg)] border border-[var(--score-cold-border)]',
+}
+
+const WHY_LABEL: Record<Score, string> = {
+  hot: 'Why hot',
+  warm: 'Why warm',
+  cold: 'Why cold',
+}
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
 }
 
 export default async function LeadDetailPage({
@@ -32,140 +47,164 @@ export default async function LeadDetailPage({
   const lead = data as Lead
 
   return (
-    <div className="max-w-2xl mx-auto p-6 animate-fade-up">
+    <div className="max-w-5xl mx-auto p-6 animate-fade-up">
       <Link
         href="/dashboard"
-        className="text-sm text-zinc-500 hover:text-zinc-300 mb-5 inline-block transition-colors"
+        className="text-sm text-muted-foreground hover:text-foreground mb-5 inline-block transition-colors"
       >
         ← Dashboard
       </Link>
 
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-6">
-        <div className="min-w-0">
-          <h1 className="font-heading text-2xl font-bold text-zinc-100">
-            {lead.name}
-          </h1>
-          <p className="text-zinc-500 mt-0.5">{lead.address}</p>
-        </div>
-        {lead.score && (
-          <span
-            className={`mt-1 text-xs px-2.5 py-1 rounded-full font-medium shrink-0 border ${SCORE_BADGE[lead.score]}`}
-          >
-            {lead.score}
-          </span>
-        )}
-      </div>
-
-      {/* Contact info */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3">
-        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-          Contact
-        </h2>
-        <div className="flex flex-col gap-2">
-          {lead.phone ? (
-            <a
-              href={`tel:${lead.phone}`}
-              className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
-              📞 {lead.phone}
-            </a>
-          ) : (
-            <span className="text-sm text-zinc-600">No phone listed</span>
-          )}
-          {lead.website ? (
-            <a
-              href={lead.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-emerald-400 hover:text-emerald-300 break-all transition-colors"
-            >
-              🌐 {lead.website}
-            </a>
-          ) : (
-            <span className="text-sm text-zinc-600">No website</span>
-          )}
-          {lead.maps_url && (
-            <a
-              href={lead.maps_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              📍 View on Google Maps
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* AI Analysis */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3">
-        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-          AI Analysis
-        </h2>
-        {lead.score ? (
-          <>
-            {lead.score_label && (
-              <div className="text-sm font-medium text-zinc-200 mb-2">
-                {lead.score_label}
+      <div className="grid grid-cols-[1fr_360px] gap-5 items-start">
+        {/* Left column */}
+        <div className="flex flex-col gap-3">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-sm font-semibold text-muted-foreground shrink-0">
+              {initials(lead.name)}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-sans text-2xl font-semibold text-foreground tracking-tight">
+                  {lead.name}
+                </h1>
+                {lead.score && (
+                  <span
+                    className={cn(
+                      'text-xs px-2.5 py-1 rounded-full font-medium shrink-0',
+                      SCORE_BADGE[lead.score]
+                    )}
+                  >
+                    {lead.score}
+                  </span>
+                )}
               </div>
-            )}
-            {lead.reasoning && (
-              <p className="text-sm text-zinc-400 mb-3">{lead.reasoning}</p>
-            )}
-            {lead.pitch && (
-              <div className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-4 py-3 mb-3">
-                <div className="text-xs text-zinc-500 mb-1.5 uppercase tracking-wider">
-                  Suggested pitch
-                </div>
-                <p className="text-sm text-zinc-300 italic">
-                  &ldquo;{lead.pitch}&rdquo;
-                </p>
+              <p className="text-muted-foreground mt-0.5 text-sm">{lead.address}</p>
+            </div>
+          </div>
+
+          {/* Cold open (pitch) */}
+          {lead.pitch && (
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                  Cold open
+                </h2>
               </div>
-            )}
-            {lead.site_audit && lead.site_audit.length > 0 && (
-              <details className="group">
-                <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors list-none flex items-center gap-1">
-                  <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                  Site Audit ({lead.site_audit.length} findings)
-                </summary>
-                <ul className="mt-2 pl-4 list-disc space-y-1">
-                  {lead.site_audit.map((finding: string, i: number) => (
-                    <li key={i} className="text-xs text-zinc-500">{finding}</li>
-                  ))}
-                </ul>
-              </details>
-            )}
-            {lead.scrape_error && (
-              <p className="text-xs text-yellow-400/80 mt-2">
-                Site couldn&apos;t be crawled when this lead was scored — audit data unavailable.
+              <p className="text-sm text-foreground leading-relaxed">
+                &ldquo;{lead.pitch}&rdquo;
               </p>
-            )}
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-zinc-500 mb-3">
-              No score yet. Run AI analysis to evaluate this lead.
-            </p>
-            <ScoreButton
-              lead={{
-                id: lead.id,
-                name: lead.name,
-                address: lead.address ?? null,
-                website: lead.website ?? null,
-                phone: lead.phone ?? null,
-              }}
-            />
-          </>
-        )}
-      </div>
+            </div>
+          )}
 
-      {/* Pipeline actions */}
-      <LeadActions
-        leadId={lead.id}
-        status={lead.status}
-        notes={lead.notes ?? ''}
-      />
+          {/* Why hot/warm/cold */}
+          {lead.score && (
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
+                {WHY_LABEL[lead.score]}
+              </h2>
+              {lead.score_label && (
+                <div className="text-sm font-medium text-foreground mb-2">
+                  {lead.score_label}
+                </div>
+              )}
+              {lead.reasoning && (
+                <p className="text-sm text-muted-foreground">{lead.reasoning}</p>
+              )}
+              {lead.site_audit && lead.site_audit.length > 0 && (
+                <details className="group mt-3">
+                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1">
+                    <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                    Site audit ({lead.site_audit.length} findings)
+                  </summary>
+                  <ul className="mt-2 pl-4 list-disc space-y-1">
+                    {lead.site_audit.map((finding: string, i: number) => (
+                      <li key={i} className="text-xs text-muted-foreground">{finding}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {lead.scrape_error && (
+                <p className="text-xs text-muted-foreground/60 mt-2">
+                  Site couldn&apos;t be crawled when this lead was scored — audit data unavailable.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* No score yet */}
+          {!lead.score && (
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
+                Score
+              </h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                No score yet. Run AI analysis to evaluate this lead.
+              </p>
+              <ScoreButton
+                lead={{
+                  id: lead.id,
+                  name: lead.name,
+                  address: lead.address ?? null,
+                  website: lead.website ?? null,
+                  phone: lead.phone ?? null,
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Right column */}
+        <div className="flex flex-col gap-3">
+          {/* Contact info */}
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
+              Contact
+            </h2>
+            <div className="flex flex-col gap-2">
+              {lead.phone ? (
+                <a
+                  href={`tel:${lead.phone}`}
+                  className="text-sm text-foreground hover:text-muted-foreground transition-colors"
+                >
+                  📞 {lead.phone}
+                </a>
+              ) : (
+                <span className="text-sm text-muted-foreground/50">No phone listed</span>
+              )}
+              {lead.website ? (
+                <a
+                  href={lead.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-foreground hover:text-muted-foreground break-all transition-colors"
+                >
+                  🌐 {lead.website}
+                </a>
+              ) : (
+                <span className="text-sm text-muted-foreground/50">No website</span>
+              )}
+              {lead.maps_url && (
+                <a
+                  href={lead.maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  📍 View on Google Maps
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Pipeline actions */}
+          <LeadActions
+            leadId={lead.id}
+            status={lead.status}
+            notes={lead.notes ?? ''}
+          />
+        </div>
+      </div>
     </div>
   )
 }

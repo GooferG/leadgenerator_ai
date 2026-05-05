@@ -59,7 +59,7 @@ export function ScoreButton({
 
     if (!scoreRes.ok) {
       const body = await scoreRes.json().catch(() => ({ error: 'Scoring failed' }))
-      setError(body.error ?? 'Scoring failed')
+      setError(body.error ?? "Couldn't score this one — try again?")
       setPhase(null)
       return
     }
@@ -91,7 +91,7 @@ export function ScoreButton({
         <button
           onClick={handleScore}
           disabled={loading}
-          className="text-sm px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-700 hover:text-zinc-100 disabled:opacity-50 transition-colors"
+          className="text-sm px-5 py-2 bg-primary text-primary-foreground rounded-full hover:opacity-90 disabled:opacity-50 transition-all"
         >
           {phase === 'crawling'
             ? 'Crawling site…'
@@ -99,10 +99,10 @@ export function ScoreButton({
             ? 'Scoring…'
             : '✦ Score with AI'}
         </button>
-        {error && <span className="text-xs text-red-400">{error}</span>}
+        {error && <span className="text-xs text-destructive">{error}</span>}
       </div>
       {scrapeNotice && (
-        <p className="text-xs text-yellow-400/80">{scrapeNotice}</p>
+        <p className="text-xs text-muted-foreground">{scrapeNotice}</p>
       )}
     </div>
   )

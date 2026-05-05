@@ -6,18 +6,18 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="w-full max-w-sm animate-fade-up">
         <div className="text-center mb-8">
-          <div className="font-heading font-bold text-sm tracking-tight text-emerald-400 mb-6">
-            Lead Generator
+          <div className="font-sans font-bold text-sm tracking-[-0.03em] text-foreground mb-6">
+            ⌐ Hook
           </div>
-          <h1 className="text-2xl font-semibold text-zinc-100 mb-2">
+          <h1 className="text-2xl font-semibold text-foreground mb-2">
             Welcome back
           </h1>
-          <p className="text-zinc-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             Sign in to continue to your account
           </p>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div className="bg-card border border-border rounded-2xl p-6">
           <form
             action={async () => {
               'use server'
@@ -30,7 +30,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-zinc-600 mt-5">
+        <p className="text-center text-xs text-muted-foreground mt-5">
           Access is by invitation only
         </p>
       </div>

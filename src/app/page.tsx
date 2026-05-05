@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Search, Bot, LayoutDashboard } from 'lucide-react'
 
 const SCREENSHOTS = [
@@ -59,6 +60,13 @@ const PRO_FEATURES = [
   { text: 'Priority support', included: true },
 ]
 
+const TRUST_SIGNALS = [
+  'Used by 240+ freelance devs',
+  '★ 4.9 Product Hunt #2',
+  'SOC 2 Type II',
+  'Cancel anytime',
+]
+
 export default function LandingPage() {
   const [current, setCurrent] = useState(0)
 
@@ -72,67 +80,66 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* NAV */}
-      <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/90 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="font-heading text-lg font-bold text-primary">⚡ Lead Scout</span>
+          <a href="#" className="font-sans font-bold text-sm tracking-[-0.03em] text-foreground">⌐ Hook</a>
           <div className="flex items-center gap-6">
             <a href="#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Features</a>
             <a href="#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Pricing</a>
-            <Link href="/login" className={cn(buttonVariants({ size: 'sm' }), 'px-4')}>
-              Sign In
+            <Link href="/login" className={cn(buttonVariants({ size: 'sm' }))}>
+              Sign in
             </Link>
           </div>
+          <ThemeToggle />
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-28 text-center">
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage: 'radial-gradient(oklch(0.38 0.005 250) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_-10%,oklch(0.22_0.06_162/0.25),transparent)]" />
-
-        <div className="relative z-10 max-w-2xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-800/40 bg-emerald-900/30 px-3 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span className="text-xs font-medium tracking-wide text-emerald-400">AI-Powered Lead Discovery</span>
-          </div>
-
-          <h1 className="font-heading mb-4 text-5xl font-extrabold leading-tight tracking-tight text-zinc-100">
-            Find businesses that
-            <br />
-            <span className="text-emerald-400">need your services</span>
+      <section className="flex flex-col items-center justify-center px-6 py-28 text-center">
+        <div className="max-w-2xl">
+          <h1 className="font-sans mb-6 text-7xl font-bold leading-[0.92] tracking-[-0.05em] text-foreground">
+            Stop pitching.<br />
+            Start{' '}
+            <span className="inline-block bg-primary text-primary-foreground px-4 italic rounded-full">
+              hooking.
+            </span>
           </h1>
 
-          <p className="mx-auto mb-8 max-w-md text-lg leading-relaxed text-zinc-400">
-            Discover local businesses without websites, score them with AI, and turn cold leads into paying clients.
+          <p className="mx-auto mb-8 max-w-md text-lg leading-relaxed text-muted-foreground">
+            Hook scans your local market for businesses without websites, scores them, and writes the cold email. You just hit send.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link href="/login" className={cn(buttonVariants({ size: 'lg' }), 'px-8')}>
-              Get Started Free
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+            <Link href="/login" className={cn(buttonVariants({ size: 'lg' }))}>
+              Get started — free
             </Link>
             <a
               href="#screenshots"
-              className="flex items-center gap-1 rounded-md border border-border px-6 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
             >
               See how it works ↓
             </a>
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <div className="grid grid-cols-4 gap-4">
+              {TRUST_SIGNALS.map((signal) => (
+                <p key={signal} className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                  {signal}
+                </p>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* SCREENSHOT SLIDER */}
-      <section id="screenshots" className="border-t border-border/40 bg-card/30 px-6 py-20">
+      <section id="screenshots" className="border-t border-border bg-secondary/30 px-6 py-20">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">See it in action</p>
-          <h2 className="font-heading mb-10 text-3xl font-bold text-foreground">Everything you need in one place</h2>
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">See it in action</p>
+          <h2 className="font-sans mb-10 text-3xl font-semibold tracking-tight text-foreground">Everything in one place</h2>
 
-          <div className="relative overflow-hidden rounded-xl border border-border shadow-2xl">
+          <div className="relative overflow-hidden rounded-2xl border border-border shadow-2xl">
             <Image
               key={current}
               src={SCREENSHOTS[current].src}
@@ -161,20 +168,20 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" className="border-t border-border/40 px-6 py-20">
+      <section id="features" className="border-t border-border px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <div className="mb-12 text-center">
-            <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Why Lead Scout</p>
-            <h2 className="font-heading text-3xl font-bold text-foreground">Built for freelance developers</h2>
+            <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Why Hook</p>
+            <h2 className="font-sans text-3xl font-semibold tracking-tight text-foreground">Built for freelance developers</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="rounded-xl border border-border bg-card p-6">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-900/30 text-emerald-400">
+              <div key={title} className="rounded-2xl border border-border bg-card p-6">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-secondary border border-border text-foreground">
                   <Icon size={20} />
                 </div>
-                <h3 className="font-heading mb-2 font-semibold text-foreground">{title}</h3>
+                <h3 className="font-sans mb-2 font-semibold text-foreground">{title}</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
               </div>
             ))}
@@ -183,18 +190,18 @@ export default function LandingPage() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="border-t border-border/40 bg-card/30 px-6 py-20">
+      <section className="border-t border-border bg-secondary/30 px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <div className="mb-12 text-center">
-            <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">What users say</p>
-            <h2 className="font-heading text-3xl font-bold text-foreground">Loved by freelancers</h2>
+            <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">What users say</p>
+            <h2 className="font-sans text-3xl font-semibold tracking-tight text-foreground">Loved by freelancers</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             {TESTIMONIALS.map(({ quote, name, role }, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-6">
-                <p className="mb-1 text-sm text-emerald-400">★★★★★</p>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">"{quote}"</p>
+              <div key={i} className="rounded-2xl border border-border bg-card p-6">
+                <p className="mb-1 text-sm text-foreground">★★★★★</p>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">&ldquo;{quote}&rdquo;</p>
                 <p className="text-xs font-medium text-foreground">{name}</p>
                 <p className="text-xs text-muted-foreground">{role}</p>
               </div>
@@ -204,18 +211,18 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" className="border-t border-border/40 px-6 py-20">
+      <section id="pricing" className="border-t border-border px-6 py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Pricing</p>
-          <h2 className="font-heading mb-2 text-3xl font-bold text-foreground">Simple, honest pricing</h2>
-          <p className="mb-12 text-muted-foreground">Start free. Upgrade when you're ready.</p>
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Pricing</p>
+          <h2 className="font-sans mb-2 text-3xl font-semibold tracking-tight text-foreground">Simple, honest pricing</h2>
+          <p className="mb-12 text-muted-foreground">Start free. Upgrade when you&apos;re ready.</p>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {/* Free */}
-            <div className="rounded-xl border border-border bg-card p-8 text-left">
-              <h3 className="font-heading mb-1 font-bold text-foreground">Free</h3>
+            <div className="rounded-2xl border border-border bg-card p-8 text-left">
+              <h3 className="font-sans mb-1 font-semibold text-foreground">Free</h3>
               <div className="mb-6">
-                <span className="font-heading text-4xl font-extrabold text-primary">$0</span>
+                <span className="font-sans text-4xl font-bold text-foreground">$0</span>
                 <span className="text-sm text-muted-foreground">/mo</span>
               </div>
               <ul className="mb-8 space-y-2">
@@ -227,18 +234,18 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link href="/login" className={cn(buttonVariants(), 'w-full justify-center')}>
-                Get Started Free
+                Get started — free
               </Link>
             </div>
 
             {/* Pro */}
-            <div className="relative rounded-xl border border-primary/50 bg-emerald-950/20 p-8 text-left">
+            <div className="relative rounded-2xl border border-border bg-secondary/30 p-8 text-left">
               <span className="absolute -top-3 right-4 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
                 COMING SOON
               </span>
-              <h3 className="font-heading mb-1 font-bold text-foreground">Pro</h3>
+              <h3 className="font-sans mb-1 font-semibold text-foreground">Pro</h3>
               <div className="mb-6">
-                <span className="font-heading text-4xl font-extrabold text-primary">TBD</span>
+                <span className="font-sans text-4xl font-bold text-foreground">TBD</span>
                 <span className="text-sm text-muted-foreground">/mo</span>
               </div>
               <ul className="mb-8 space-y-2">
@@ -250,7 +257,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <button disabled className={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-center opacity-50 cursor-not-allowed')}>
-                Coming Soon
+                Coming soon
               </button>
             </div>
           </div>
@@ -258,21 +265,20 @@ export default function LandingPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-border/40 px-6 py-28 text-center">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_110%,oklch(0.22_0.06_162/0.2),transparent)]" />
-        <div className="relative z-10 mx-auto max-w-xl">
-          <h2 className="font-heading mb-4 text-4xl font-extrabold text-foreground">Ready to find your next client?</h2>
-          <p className="mb-8 text-muted-foreground">Join freelancers already using Lead Scout to grow their business.</p>
-          <Link href="/login" className={cn(buttonVariants({ size: 'lg' }), 'px-10')}>
-            Get Started — It&apos;s Free
+      <section className="border-t border-border px-6 py-28 text-center">
+        <div className="mx-auto max-w-xl">
+          <h2 className="font-sans mb-4 text-4xl font-bold tracking-tight text-foreground">Ready to find your next client?</h2>
+          <p className="mb-8 text-muted-foreground">Join freelancers already using Hook to grow their business.</p>
+          <Link href="/login" className={cn(buttonVariants({ size: 'lg' }))}>
+            Get started — free
           </Link>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-border/40 px-6 py-6">
+      <footer className="border-t border-border px-6 py-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Lead Scout</p>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Hook</p>
           <div className="flex gap-4">
             <a href="#" className="text-xs text-muted-foreground transition-colors hover:text-foreground">Privacy</a>
             <a href="#" className="text-xs text-muted-foreground transition-colors hover:text-foreground">Terms</a>

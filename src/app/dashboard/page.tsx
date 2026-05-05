@@ -6,18 +6,26 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const SCORE_BADGE: Record<Score, string> = {
-  hot: 'bg-amber-900/40 text-amber-400 border border-amber-800/50',
-  warm: 'bg-yellow-900/40 text-yellow-400 border border-yellow-800/50',
-  cold: 'bg-blue-900/40 text-blue-400 border border-blue-800/50',
+  hot: 'bg-[var(--score-hot-bg)] text-[var(--score-hot-fg)]',
+  warm: 'bg-[var(--score-warm-bg)] text-[var(--score-warm-fg)]',
+  cold: 'bg-[var(--score-cold-bg)] text-[var(--score-cold-fg)] border border-[var(--score-cold-border)]',
 }
 
 const STATUS_BADGE: Record<LeadStatus, string> = {
-  new: 'bg-zinc-800 text-zinc-400',
-  contacted: 'bg-amber-900/40 text-amber-400 border border-amber-800/50',
-  converted: 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50',
+  new: 'bg-secondary text-secondary-foreground',
+  contacted: 'bg-secondary text-secondary-foreground',
+  converted: 'bg-primary text-primary-foreground',
 }
 
 const FILTERS = ['all', 'hot', 'warm', 'cold', 'contacted', 'converted'] as const
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -28,23 +36,32 @@ export default async function DashboardPage({
   const { filter } = await searchParams
   const userId = session!.user.id
 
-  const [{ count: total }, { count: hotCount }, { count: contactedCount }] =
-    await Promise.all([
-      supabaseAdmin
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId),
-      supabaseAdmin
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('score', 'hot'),
-      supabaseAdmin
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'contacted'),
-    ])
+  const [
+    { count: total },
+    { count: hotCount },
+    { count: contactedCount },
+    { count: wonCount },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId),
+    supabaseAdmin
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('score', 'hot'),
+    supabaseAdmin
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'contacted'),
+    supabaseAdmin
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'converted'),
+  ])
 
   let query = supabaseAdmin
     .from('leads')
@@ -60,42 +77,48 @@ export default async function DashboardPage({
 
   const { data: leads } = await query
 
+  const activeFilter = filter ?? 'all'
+
   return (
     <div className="max-w-5xl mx-auto p-6">
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-3 mb-8 animate-stagger-1">
-        <Link
-          href="/dashboard"
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors"
-        >
-          <div className="text-3xl font-heading font-bold text-zinc-100 mb-1 tabular-nums">
-            {total ?? 0}
-          </div>
-          <div className="text-xs text-zinc-500 uppercase tracking-wider">Total leads</div>
-        </Link>
-
-        <Link
-          href="/dashboard?filter=hot"
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-amber-800/50 transition-colors"
-        >
-          <div className="text-3xl font-heading font-bold text-amber-400 mb-1 tabular-nums">
-            {hotCount ?? 0}
-          </div>
-          <div className="text-xs text-zinc-500 uppercase tracking-wider">Hot leads</div>
-        </Link>
-
-        <Link
-          href="/dashboard?filter=contacted"
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-emerald-800/50 transition-colors"
-        >
-          <div className="text-3xl font-heading font-bold text-emerald-400 mb-1 tabular-nums">
-            {contactedCount ?? 0}
-          </div>
-          <div className="text-xs text-zinc-500 uppercase tracking-wider">Contacted</div>
-        </Link>
+      {/* Stat cards — clicking one sets the active filter */}
+      <div className="grid grid-cols-4 gap-3 mb-6 animate-stagger-1">
+        {([
+          { href: '/dashboard', filterKey: 'all', count: total ?? 0, label: 'Total' },
+          { href: '/dashboard?filter=hot', filterKey: 'hot', count: hotCount ?? 0, label: 'Hot' },
+          { href: '/dashboard?filter=contacted', filterKey: 'contacted', count: contactedCount ?? 0, label: 'Contacted' },
+          { href: '/dashboard?filter=converted', filterKey: 'converted', count: wonCount ?? 0, label: 'Won' },
+        ] as const).map(({ href, filterKey, count, label }) => {
+          const active = activeFilter === filterKey
+          return (
+            <Link
+              key={filterKey}
+              href={href}
+              className={cn(
+                'rounded-2xl p-5 transition-all',
+                active
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card border border-border hover:bg-secondary'
+              )}
+            >
+              <div className={cn(
+                'text-3xl font-sans font-semibold mb-1 tabular-nums tracking-tight',
+                active ? '' : 'text-foreground'
+              )}>
+                {count}
+              </div>
+              <div className={cn(
+                'text-xs font-mono uppercase tracking-[0.08em]',
+                active ? 'opacity-70' : 'text-muted-foreground'
+              )}>
+                {label}
+              </div>
+            </Link>
+          )
+        })}
       </div>
 
-      {/* Filter bar */}
+      {/* Filter bar — for score-based filters not covered by stat cards */}
       <div className="flex gap-1.5 mb-5 flex-wrap animate-stagger-2">
         {FILTERS.map((f) => (
           <Link
@@ -103,9 +126,9 @@ export default async function DashboardPage({
             href={f === 'all' ? '/dashboard' : `/dashboard?filter=${f}`}
             className={cn(
               'px-3 py-1 rounded-full text-xs font-medium transition-colors capitalize',
-              filter === f || (!filter && f === 'all')
-                ? 'bg-zinc-100 text-zinc-900'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800'
+              activeFilter === f
+                ? 'bg-primary text-primary-foreground'
+                : 'border border-border text-muted-foreground hover:text-foreground hover:bg-secondary'
             )}
           >
             {f}
@@ -113,9 +136,9 @@ export default async function DashboardPage({
         ))}
       </div>
 
-      {/* Leads list */}
+      {/* Leads table */}
       {!leads?.length ? (
-        <div className="text-center py-16 text-zinc-500 animate-stagger-3">
+        <div className="text-center py-16 text-muted-foreground animate-stagger-3">
           <p className="mb-4 text-sm">
             No leads yet{filter && filter !== 'all' ? ` matching "${filter}"` : ''}.
           </p>
@@ -124,34 +147,41 @@ export default async function DashboardPage({
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 animate-stagger-3">
-          {leads.map((lead: Lead) => (
+        <div className="animate-stagger-3 rounded-2xl border border-border overflow-hidden">
+          {/* Table header */}
+          <div className="grid grid-cols-[2fr_2fr_100px_100px] px-4 py-2.5 border-b border-border bg-secondary/40">
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em]">Business</div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em]">Location</div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em]">Score</div>
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em]">Status</div>
+          </div>
+          {leads.map((lead: Lead, i: number) => (
             <Link
               key={lead.id}
               href={`/leads/${lead.id}`}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3.5 flex items-center justify-between hover:border-zinc-700 hover:bg-zinc-800/40 transition-all"
+              className={cn(
+                'grid grid-cols-[2fr_2fr_100px_100px] px-4 py-3 items-center hover:bg-secondary transition-colors',
+                i !== leads.length - 1 && 'border-b border-border'
+              )}
             >
-              <div className="min-w-0">
-                <div className="font-medium text-zinc-100 truncate">{lead.name}</div>
-                <div className="text-sm text-zinc-500 truncate">{lead.address}</div>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-8 rounded-xl bg-secondary border border-border flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
+                  {initials(lead.name)}
+                </div>
+                <span className="font-medium text-foreground truncate">{lead.name}</span>
               </div>
-              <div className="flex items-center gap-2 ml-4 shrink-0">
-                {lead.score && (
-                  <span
-                    className={cn(
-                      'text-xs px-2 py-0.5 rounded-full font-medium',
-                      SCORE_BADGE[lead.score]
-                    )}
-                  >
+              <div className="text-sm text-muted-foreground truncate pr-4">{lead.address}</div>
+              <div>
+                {lead.score ? (
+                  <span className={cn('text-xs px-2.5 py-1 rounded-full font-medium', SCORE_BADGE[lead.score])}>
                     {lead.score}
                   </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground/50">—</span>
                 )}
-                <span
-                  className={cn(
-                    'text-xs px-2 py-0.5 rounded-full',
-                    STATUS_BADGE[lead.status]
-                  )}
-                >
+              </div>
+              <div>
+                <span className={cn('text-xs px-2.5 py-1 rounded-full', STATUS_BADGE[lead.status])}>
                   {lead.status}
                 </span>
               </div>

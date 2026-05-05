@@ -37,16 +37,16 @@ export function LeadActions({
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-      <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+    <div className="bg-card border border-border rounded-2xl p-4">
+      <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3 flex items-center gap-2">
         Pipeline
         {saving && (
-          <span className="text-xs font-normal text-zinc-600">Saving…</span>
+          <span className="text-xs font-normal text-muted-foreground/60">Saving…</span>
         )}
       </h2>
       <div className="flex flex-col gap-4">
         <div>
-          <label className="text-sm text-zinc-400 block mb-1.5">Status</label>
+          <label className="text-sm text-muted-foreground block mb-1.5">Status</label>
           <select
             value={status}
             onChange={async (e) => {
@@ -54,7 +54,7 @@ export function LeadActions({
               setStatus(newStatus)
               await updateLead({ status: newStatus })
             }}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-colors"
+            className="bg-background border border-border rounded-full px-4 py-2 text-sm text-foreground w-full focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors"
           >
             <option value="new">New</option>
             <option value="contacted">Contacted</option>
@@ -62,21 +62,21 @@ export function LeadActions({
           </select>
         </div>
         <div>
-          <label className="text-sm text-zinc-400 block mb-1.5">Notes</label>
+          <label className="text-sm text-muted-foreground block mb-1.5">Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={() => updateLead({ notes })}
             placeholder="Add notes about this lead…"
             rows={4}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/50 transition-colors resize-none"
+            className="bg-background border border-border rounded-2xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 w-full focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors resize-none"
           />
         </div>
-        <div className="pt-2 border-t border-zinc-800">
+        <div className="pt-2 border-t border-border">
           <button
             onClick={deleteLead}
             disabled={deleting}
-            className="text-xs text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-50"
+            className="text-xs text-muted-foreground/60 hover:text-destructive transition-colors disabled:opacity-50"
           >
             {deleting ? 'Removing…' : 'Remove lead'}
           </button>
