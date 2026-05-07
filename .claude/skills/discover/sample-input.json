@@ -1,0 +1,12 @@
+{
+  "niche": "cosmetic-dentist",
+  "city": "Austin, TX",
+  "areas": ["West Austin"],
+  "filters": {
+    "max_reviews": 50,
+    "min_rating": 4.0,
+    "has_website": "any",
+    "skip_top_n": 3
+  },
+  "target_per_area": 5
+}
