@@ -55,12 +55,12 @@ export default async function DashboardPage({
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('status', 'contacted'),
+      .eq('status', 'sent'),
     supabaseAdmin
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('status', 'converted'),
+      .eq('status', 'replied'),
   ])
 
   let query = supabaseAdmin
@@ -71,8 +71,10 @@ export default async function DashboardPage({
 
   if (filter === 'hot' || filter === 'warm' || filter === 'cold') {
     query = query.eq('score', filter)
-  } else if (filter === 'contacted' || filter === 'converted') {
-    query = query.eq('status', filter)
+  } else if (filter === 'contacted') {
+    query = query.eq('status', 'sent')
+  } else if (filter === 'converted') {
+    query = query.eq('status', 'replied')
   }
 
   const { data: leads } = await query
