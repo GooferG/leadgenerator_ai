@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { hasValidServiceKey } from '@/lib/auth-service'
 import { LeadsListQuerySchema } from '@/lib/schemas'
 
 // List leads.
 // Default scope='mine' preserves existing behavior (per-user isolation).
 // scope='all' returns shared workspace leads — used by the future Phase 4 dashboard
-// and the discover-skill-facing read paths. Each lead includes its latest enrichment
-// when one exists.
+// and the discover/enrich skill-facing read paths. Each lead includes its latest
+// enrichment when one exists.
+//
+// Auth: approved session OR x-hook-service-key. Service-key callers must pass
+// scope='all' (no implicit `user_id` to filter by).
 export async function GET(req: Request) {
   const session = await auth()
-  if (!session?.user?.approved) {
+  const sessionOk = !!session?.user?.approved
+  const serviceOk = hasValidServiceKey(req)
+
+  if (!sessionOk && !serviceOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -25,7 +32,9 @@ export async function GET(req: Request) {
     )
   }
 
-  const { status, niche, area_label, owner_id, scope, limit, offset } = parsed.data
+  const { status, niche, area_label, owner_id, limit, offset } = parsed.data
+  // Service-key callers default to scope='all' since they have no session user.
+  const scope = !sessionOk && parsed.data.scope === 'mine' ? 'all' : parsed.data.scope
 
   let query = supabaseAdmin
     .from('leads')
@@ -34,7 +43,7 @@ export async function GET(req: Request) {
     .range(offset, offset + limit - 1)
 
   if (scope === 'mine') {
-    query = query.eq('user_id', session.user.id)
+    query = query.eq('user_id', session!.user.id)
   } else if (owner_id) {
     query = query.eq('user_id', owner_id)
   }
