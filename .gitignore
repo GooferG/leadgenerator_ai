@@ -43,4 +43,6 @@ next-env.d.ts
 # superpowers brainstorm sessions
 .superpowers/
 
-.claude
+.claude/*
+!.claude/skills/
+.claude/skills/**/.env*
