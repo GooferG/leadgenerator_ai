@@ -67,3 +67,29 @@ export const LeadsListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 })
+
+// Phase 2 — mockup creation.
+// Props are persisted as jsonb and read by the public /m/[slug] template.
+// Loose for now; the template renders defensively against missing fields.
+export const MockupPropsSchema = z.object({
+  business_name: z.string().min(1),
+  business_address: z.string().nullable().optional(),
+  business_phone: z.string().nullable().optional(),
+  hero_angle: z.string(),
+  services: z.array(z.string()),
+  tone: z.string(),
+  palette: z.string(),
+  cta_copy: z.string(),
+  design_choice: z.string(),
+})
+export type MockupProps = z.infer<typeof MockupPropsSchema>
+
+export const MockupInputSchema = z.object({
+  lead_id: z.string().uuid(),
+  // Reserved for Tier 3 (per-niche templates). For now the API ignores any value
+  // other than 'local-service' and falls back silently — keeps the contract
+  // forward-compatible without forcing the skill to know about template ids.
+  template_id: z.string().default('local-service'),
+  // If omitted the API derives props from the lead's latest enrichment.
+  props: MockupPropsSchema.optional(),
+})
