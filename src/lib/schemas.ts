@@ -54,6 +54,14 @@ export const EnrichmentInputSchema = z.object({
   cold_message: z.string(),
   chain_flag_reason: z.string().optional().nullable(),
   model_version: z.string(),
+  // Phase 3.5 — CRM-facing fields. Optional so older callers (pre-merge) keep
+  // working; when present, the API mirrors them to the leads row.
+  score: z.enum(['hot', 'warm', 'cold']).optional(),
+  score_label: z.string().optional(),
+  reasoning: z.string().optional(),
+  pitch: z.string().optional(),
+  site_audit: z.array(z.string()).optional(),
+  scrape_error: z.boolean().optional(),
 })
 export type EnrichmentInput = z.infer<typeof EnrichmentInputSchema>
 
@@ -81,6 +89,9 @@ export const MockupPropsSchema = z.object({
   palette: z.string(),
   cta_copy: z.string(),
   design_choice: z.string(),
+  // Phase 3.5 — concrete issues with the lead's current site, surfaced as a
+  // "what we'd fix" section in the mockup. Optional; older mockups don't have it.
+  site_audit: z.array(z.string()).optional(),
 })
 export type MockupProps = z.infer<typeof MockupPropsSchema>
 

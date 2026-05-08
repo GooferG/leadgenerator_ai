@@ -4,12 +4,22 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { hasValidServiceKey } from '@/lib/auth-service'
 import { EnrichmentInputSchema } from '@/lib/schemas'
 
-// Create an enrichment record for a lead and bump lead.status accordingly.
-// Auth: approved session OR x-hook-service-key (the Phase 1.5 enrichment skill
-// will call this with the service key).
+// Create an enrichment record for a lead, mirror CRM fields to the leads row,
+// and bump lead.status accordingly.
 //
-// Side effect: if chain_flag_reason is set the lead is archived as a chain;
-// otherwise its status moves to 'enriched'.
+// Auth: approved session OR x-hook-service-key.
+//
+// Side effects:
+//   1. Insert into `enrichments` (always)
+//   2. Mirror score/score_label/reasoning/pitch/site_audit/scrape_error to
+//      leads.* if provided — keeps the dashboard's CRM view populated for
+//      skill-driven leads
+//   3. If chain_flag_reason set: lead.status='archived', is_chain=true
+//      Otherwise: lead.status='enriched'
+//
+// On --force re-enrichment: existing enrichment rows aren't deleted; the new
+// one is inserted alongside (the lead detail page picks the most recent via
+// ordering). This preserves audit history of what Claude said over time.
 export async function POST(req: Request) {
   const session = await auth()
   const sessionOk = !!session?.user?.approved
@@ -49,9 +59,18 @@ export async function POST(req: Request) {
   }
 
   const isChain = !!input.chain_flag_reason
-  const leadUpdate = isChain
+
+  // Build the leads update: status + is_chain + any provided CRM fields.
+  const leadUpdate: Record<string, unknown> = isChain
     ? { status: 'archived', is_chain: true }
     : { status: 'enriched' }
+
+  if (input.score !== undefined) leadUpdate.score = input.score
+  if (input.score_label !== undefined) leadUpdate.score_label = input.score_label
+  if (input.reasoning !== undefined) leadUpdate.reasoning = input.reasoning
+  if (input.pitch !== undefined) leadUpdate.pitch = input.pitch
+  if (input.site_audit !== undefined) leadUpdate.site_audit = input.site_audit
+  if (input.scrape_error !== undefined) leadUpdate.scrape_error = input.scrape_error
 
   const { error: updateError } = await supabaseAdmin
     .from('leads')
