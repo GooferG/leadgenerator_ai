@@ -46,3 +46,6 @@ next-env.d.ts
 .claude/*
 !.claude/skills/
 .claude/skills/**/.env*
+
+# video skill local cache (Playwright recordings + transcoded MP4s)
+/.cache/
