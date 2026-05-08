@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { hasValidServiceKey } from '@/lib/auth-service'
 import { SiteContent } from '@/types/lead'
 
 type ScrapeError = 'timeout' | 'blocked' | 'unreachable'
@@ -54,7 +55,10 @@ function parseHtml(html: string): SiteContent {
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session?.user?.approved) {
+  const sessionOk = !!session?.user?.approved
+  const serviceOk = hasValidServiceKey(req)
+
+  if (!sessionOk && !serviceOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
