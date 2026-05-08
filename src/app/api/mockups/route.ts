@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   } else {
     const { data: lead, error: leadErr } = await supabaseAdmin
       .from('leads')
-      .select('business_name, name, business_address, address, business_phone, phone, enrichments(site_brief)')
+      .select('business_name, name, business_address, address, business_phone, phone, site_audit, enrichments(site_brief)')
       .eq('id', input.lead_id)
       .order('created_at', { foreignTable: 'enrichments', ascending: false })
       .limit(1, { foreignTable: 'enrichments' })
@@ -72,6 +72,7 @@ export async function POST(req: Request) {
       palette: (siteBrief.palette as string) ?? '',
       cta_copy: (siteBrief.cta_copy as string) ?? 'Get a free estimate',
       design_choice: (siteBrief.design_choice as string) ?? '',
+      site_audit: (lead.site_audit as string[]) ?? undefined,
     }
   }
 

@@ -178,6 +178,51 @@ export function LocalServiceTemplate({ props }: Props) {
         </div>
       </section>
 
+      {/* WHAT WE'D FIX — opt-in section, only renders when site_audit findings exist
+          and the audit isn't a no-website placeholder. Phase 3.5 surface for the
+          "before/after" angle that makes mockups feel custom. */}
+      {props.site_audit &&
+        props.site_audit.length > 0 &&
+        !props.site_audit.some((s) => /no website|chain location/i.test(s)) && (
+        <section
+          className="border-b"
+          style={{ borderColor: palette.border, backgroundColor: palette.surface }}
+        >
+          <div className="max-w-6xl mx-auto px-6 py-20">
+            <p
+              className="text-xs font-mono uppercase tracking-[0.12em] mb-3"
+              style={{ color: palette.muted }}
+            >
+              What we&rsquo;d fix
+            </p>
+            <h2
+              className={`${headingFontClass} text-3xl md:text-4xl font-semibold mb-10 max-w-2xl`}
+              style={{ letterSpacing: '-0.02em' }}
+            >
+              Where the current site falls short
+            </h2>
+            <ul className="space-y-4 max-w-3xl">
+              {props.site_audit.map((finding, i) => (
+                <li key={i} className="flex gap-4">
+                  <span
+                    className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-mono mt-0.5"
+                    style={{
+                      backgroundColor: palette.accent,
+                      color: palette.accentFg,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <p className="text-base leading-relaxed" style={{ color: palette.fg }}>
+                    {finding}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {/* CONTACT */}
       <section style={{ backgroundColor: palette.surface }}>
         <div className="max-w-6xl mx-auto px-6 py-20">

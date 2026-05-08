@@ -3,6 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+// Phase 3.5 — was "Score with AI", now triggers the combined enrichment pass
+// (scrape + Claude + persist enrichments + mirror CRM fields). Single button,
+// single action, populates everything: score/score_label/reasoning/pitch +
+// diagnosis/site_brief/cold_message.
+
 export function ScoreButton({
   lead,
 }: {
@@ -15,95 +20,41 @@ export function ScoreButton({
   }
 }) {
   const router = useRouter()
-  const [phase, setPhase] = useState<'crawling' | 'scoring' | null>(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [scrapeNotice, setScrapeNotice] = useState<string | null>(null)
 
-  async function handleScore() {
-    setPhase(null)
+  async function handleEnrich() {
+    setLoading(true)
     setError(null)
-    setScrapeNotice(null)
 
-    let siteContent = undefined
-
-    if (lead.website) {
-      setPhase('crawling')
-      const scrapeRes = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: lead.website }),
-      })
-      const scrapeData = await scrapeRes.json()
-
-      if (scrapeData.error) {
-        setScrapeNotice("Couldn't crawl site — scoring with available data instead")
-      } else {
-        siteContent = scrapeData.content
-      }
-    }
-
-    setPhase('scoring')
-
-    const scoreRes = await fetch('/api/score', {
+    const res = await fetch(`/api/leads/${lead.id}/enrich`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: lead.name,
-        address: lead.address,
-        website: lead.website,
-        phone: lead.phone,
-        businessType: '',
-        siteContent,
-      }),
     })
 
-    if (!scoreRes.ok) {
-      const body = await scoreRes.json().catch(() => ({ error: 'Scoring failed' }))
-      setError(body.error ?? "Couldn't score this one — try again?")
-      setPhase(null)
+    setLoading(false)
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Enrichment failed' }))
+      setError(body.error ?? "Couldn't enrich this one — try again?")
       return
     }
 
-    const scoreData = await scoreRes.json()
-
-    await fetch(`/api/leads/${lead.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        score: scoreData.score,
-        score_label: scoreData.scoreLabel,
-        reasoning: scoreData.reasoning,
-        pitch: scoreData.pitch,
-        site_audit: scoreData.siteAudit ?? null,
-        scrape_error: scoreData.scrapeError ?? null,
-      }),
-    })
-
-    setPhase(null)
     router.refresh()
   }
-
-  const loading = phase !== null
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
         <button
-          onClick={handleScore}
+          onClick={handleEnrich}
           disabled={loading}
           className="text-sm px-5 py-2 bg-primary text-primary-foreground rounded-full hover:opacity-90 disabled:opacity-50 transition-all"
         >
-          {phase === 'crawling'
-            ? 'Crawling site…'
-            : phase === 'scoring'
-            ? 'Scoring…'
-            : '✦ Score with AI'}
+          {loading ? 'Enriching…' : '✦ Enrich with AI'}
         </button>
         {error && <span className="text-xs text-destructive">{error}</span>}
       </div>
-      {scrapeNotice && (
-        <p className="text-xs text-muted-foreground">{scrapeNotice}</p>
-      )}
     </div>
   )
 }
