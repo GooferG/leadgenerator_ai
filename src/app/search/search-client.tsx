@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { EnrichProgress } from '@/components/enrich-progress'
 import { PlaceResult, ScoreResult } from '@/types/lead'
 import { cn } from '@/lib/utils'
 
@@ -90,6 +91,13 @@ export function SearchClient({
   const [hasSearched, setHasSearched] = useState(false)
   const [bulkAction, setBulkAction] = useState<'idle' | 'saving' | 'enriching'>('idle')
   const [bulkProgress, setBulkProgress] = useState<{ inserted: number; skipped: number } | null>(null)
+
+  // Per-result mockup state — keyed by placeId since saved lead ids may not be known yet.
+  const [generatingMockupId, setGeneratingMockupId] = useState<string | null>(null)
+  const [mockupUrls, setMockupUrls] = useState<Record<string, string>>({})
+  const [mockupErrors, setMockupErrors] = useState<Record<string, string>>({})
+  // Track which placeIds have just completed an enrich, so the progress bar can snap to 100% then fade.
+  const [enrichDone, setEnrichDone] = useState<Record<string, boolean>>({})
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -232,6 +240,11 @@ export function SearchClient({
     setNextPageToken(data.nextPageToken)
   }
 
+  // Per-result Enrich. Replaces the legacy score-only flow:
+  //  1. Ensure the lead is saved (auto-save if not yet, mirrors handleSave)
+  //  2. POST /api/leads/[id]/enrich — combined pass: scrape + Claude +
+  //     persist enrichments row + mirror CRM fields + bump status='enriched'
+  //  3. Reflect score data on the result card so UI stays informative
   async function handleScore(result: ScoredResult) {
     setScoringId(result.placeId)
     setScoringPhase(null)
@@ -246,33 +259,37 @@ export function SearchClient({
       return next
     })
 
-    let siteContent = undefined
-
-    if (result.website) {
+    // Ensure lead is saved first — the enrich endpoint operates on a lead row.
+    let leadId = savedLeadIds[result.placeId]
+    if (!leadId) {
       setScoringPhase('crawling')
-      const scrapeRes = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: result.website }),
+      await handleSave(result)
+      // handleSave updates state asynchronously; re-read from a fresh fetch
+      // in the closure isn't reliable. Look it up via the API instead.
+      const lookup = await fetch(`/api/leads?status=discovered&scope=mine&limit=200`, {
+        credentials: 'include',
       })
-      const scrapeData = await scrapeRes.json()
-
-      if (scrapeData.error) {
-        setScrapeNotices((prev) => ({
-          ...prev,
-          [result.placeId]: "Couldn't crawl site — scoring with available data instead",
-        }))
-      } else {
-        siteContent = scrapeData.content
+      if (lookup.ok) {
+        const leads = (await lookup.json()) as Array<{ id: string; place_id: string | null }>
+        const found = leads.find((l) => l.place_id === result.placeId)
+        if (found) leadId = found.id
       }
+    }
+
+    if (!leadId) {
+      setScoringId(null)
+      setScoreErrors((prev) => ({
+        ...prev,
+        [result.placeId]: 'Could not save lead before enriching',
+      }))
+      return
     }
 
     setScoringPhase('scoring')
 
-    const res = await fetch('/api/score', {
+    const res = await fetch(`/api/leads/${leadId}/enrich`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...result, businessType, siteContent }),
     })
 
     setScoringId(null)
@@ -282,38 +299,137 @@ export function SearchClient({
       const body = await res.json().catch(() => ({ error: 'Unknown error' }))
       setScoreErrors((prev) => ({
         ...prev,
-        [result.placeId]: body.error ?? "Couldn't score this one — try again?",
+        [result.placeId]: body.error ?? "Couldn't enrich this one — try again?",
       }))
       return
     }
 
-    const scoreData: ScoreResult = await res.json()
+    // Reflect on the card — the API returns the parsed Claude output.
+    const data = (await res.json()) as {
+      enrichment: {
+        score: 'hot' | 'warm' | 'cold'
+        score_label: string
+        reasoning: string
+        pitch: string
+        site_audit: string[]
+      }
+    }
     setResults((prev) =>
       prev.map((r) =>
-        r.placeId === result.placeId ? { ...r, scoreData } : r
+        r.placeId === result.placeId
+          ? {
+              ...r,
+              scoreData: {
+                score: data.enrichment.score,
+                scoreLabel: data.enrichment.score_label,
+                reasoning: data.enrichment.reasoning,
+                pitch: data.enrichment.pitch,
+                siteAudit: data.enrichment.site_audit,
+              },
+            }
+          : r
       )
     )
 
-    const leadId = savedLeadIds[result.placeId]
-    if (leadId) {
-      await fetch(`/api/leads/${leadId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          score: scoreData.score,
-          score_label: scoreData.scoreLabel,
-          reasoning: scoreData.reasoning,
-          pitch: scoreData.pitch,
-          site_audit: scoreData.siteAudit ?? null,
-          scrape_error: scoreData.scrapeError ?? null,
-        }),
+    // Snap progress bar to 100, then clear the done flag after the fade so
+    // re-enriching this card later starts fresh.
+    setEnrichDone((prev) => ({ ...prev, [result.placeId]: true }))
+    setTimeout(() => {
+      setEnrichDone((prev) => {
+        const next = { ...prev }
+        delete next[result.placeId]
+        return next
       })
+    }, 1200)
+  }
+
+  // Per-result Mockup generation. Requires the lead to be enriched first.
+  // Calls POST /api/mockups; the API derives props from the latest enrichment.
+  async function handleMockup(result: ScoredResult) {
+    const leadId = savedLeadIds[result.placeId]
+    if (!leadId) {
+      setMockupErrors((prev) => ({
+        ...prev,
+        [result.placeId]: 'Save and enrich first',
+      }))
+      return
     }
+
+    setGeneratingMockupId(result.placeId)
+    setMockupErrors((prev) => {
+      const next = { ...prev }
+      delete next[result.placeId]
+      return next
+    })
+
+    const res = await fetch('/api/mockups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_id: leadId }),
+    })
+
+    setGeneratingMockupId(null)
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+      setMockupErrors((prev) => ({
+        ...prev,
+        [result.placeId]: body.error ?? "Couldn't generate mockup",
+      }))
+      return
+    }
+
+    const data = (await res.json()) as { slug: string; public_url: string }
+    setMockupUrls((prev) => ({ ...prev, [result.placeId]: data.public_url }))
+    // Open in a new tab so the operator can immediately review
+    window.open(data.public_url, '_blank', 'noopener,noreferrer')
   }
 
   async function handleSave(result: ScoredResult) {
     setSavingId(result.placeId)
 
+    // In discover mode, prefer /api/leads/bulk so the same code path that
+    // populates niche + area_label + place_data is used for single-result
+    // cherry-picks. Falls through to legacy /api/leads POST in browse mode.
+    if (mode === 'discover') {
+      const niches = niche === '__custom__' ? customNiche.trim() : niche
+      const res = await fetch('/api/leads/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leads: [
+            {
+              place_id: result.placeId,
+              business_name: result.name,
+              business_address: result.address,
+              business_phone: result.phone,
+              website_url: result.website,
+              niche: niches,
+              area_label: result.area_label ?? city,
+              area_lat: result.area_lat ?? null,
+              area_lng: result.area_lng ?? null,
+              rating: result.rating,
+              review_count: result.reviewCount,
+              maps_url: result.mapsUrl,
+            },
+          ],
+        }),
+      })
+
+      setSavingId(null)
+
+      if (res.ok) {
+        const data: { inserted: number; skipped: number; lead_ids: string[] } = await res.json()
+        setSavedPlaceIds((prev) => new Set([...prev, result.placeId]))
+        if (data.lead_ids[0]) {
+          setSavedLeadIds((prev) => ({ ...prev, [result.placeId]: data.lead_ids[0] }))
+        }
+      }
+      return
+    }
+
+    // Browse mode — legacy single-result path. No niche/area data available
+    // in this mode anyway.
     const res = await fetch('/api/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -644,7 +760,7 @@ export function SearchClient({
                     </div>
                   </div>
 
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 flex-wrap">
                     {!scored && (
                       <Button
                         size="sm"
@@ -654,9 +770,30 @@ export function SearchClient({
                       >
                         {isScoring
                           ? scoringPhase === 'crawling'
-                            ? 'Crawling…'
-                            : 'Scoring…'
-                          : '✦ Score'}
+                            ? 'Saving…'
+                            : 'Enriching…'
+                          : '✦ Enrich'}
+                      </Button>
+                    )}
+                    {scored && mode === 'discover' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const existing = mockupUrls[result.placeId]
+                          if (existing) {
+                            window.open(existing, '_blank', 'noopener,noreferrer')
+                          } else {
+                            handleMockup(result)
+                          }
+                        }}
+                        disabled={generatingMockupId === result.placeId}
+                      >
+                        {generatingMockupId === result.placeId
+                          ? 'Building…'
+                          : mockupUrls[result.placeId]
+                          ? 'Open mockup ↗'
+                          : '✦ Mockup'}
                       </Button>
                     )}
                     {isSaved ? (
@@ -675,9 +812,25 @@ export function SearchClient({
                   </div>
                 </div>
 
+                {(isScoring || enrichDone[result.placeId]) && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <EnrichProgress
+                      active={isScoring}
+                      hasWebsite={!!result.website}
+                      done={enrichDone[result.placeId] ?? false}
+                    />
+                  </div>
+                )}
+
                 {scoreError && (
                   <div className="mt-3 pt-3 border-t border-border text-xs text-destructive">
                     {scoreError}
+                  </div>
+                )}
+
+                {mockupErrors[result.placeId] && (
+                  <div className="mt-2 text-xs text-destructive">
+                    {mockupErrors[result.placeId]}
                   </div>
                 )}
 

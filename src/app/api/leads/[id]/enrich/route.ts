@@ -107,16 +107,24 @@ export async function POST(
 
   const { id } = await params
 
+  // Shared workspace: any approved user can enrich any lead. Matches the
+  // bulk-save and discover skill paths, which already operate on the shared
+  // pool. Phase 4 dashboard redesign will surface ownership where useful.
+  //
+  // NOTE: leads table doesn't have a `rating` column — Places rating arrives
+  // inside `place_data` jsonb. We pull it from there if present.
   const { data: lead, error: leadError } = await supabaseAdmin
     .from('leads')
-    .select('id, business_name, name, business_address, address, business_phone, phone, website, niche, area_label, rating')
+    .select('id, business_name, name, business_address, address, business_phone, phone, website, niche, area_label, place_data')
     .eq('id', id)
-    .eq('user_id', session.user.id)
     .single()
 
   if (leadError || !lead) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
+
+  const placeData = (lead.place_data ?? {}) as Record<string, unknown>
+  const rating = (placeData.rating as number | undefined) ?? null
 
   // Scrape (best-effort)
   let scrapeError: string | null = null
@@ -147,7 +155,7 @@ ${scraped.bodyText}
 - Phone: ${lead.business_phone ?? lead.phone ?? 'unknown'}
 - Niche: ${lead.niche ?? 'unknown'}
 - Area: ${lead.area_label ?? 'unknown'}
-- Google rating: ${lead.rating ?? 'unknown'}
+- Google rating: ${rating ?? 'unknown'}
 
 ${siteSection}
 

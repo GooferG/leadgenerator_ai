@@ -109,63 +109,117 @@ export default async function LeadDetailPage({
             </div>
           </div>
 
-          {/* Cold open (pitch) */}
-          {lead.pitch && (
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em]">
-                  Cold open
-                </h2>
-              </div>
-              <p className="text-sm text-foreground leading-relaxed">
-                &ldquo;{lead.pitch}&rdquo;
-              </p>
-            </div>
-          )}
-
-          {/* Why hot/warm/cold */}
-          {lead.score && (
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
-                {WHY_LABEL[lead.score]}
+          {/* Unified enrichment panel — single source of truth.
+              Phase 3.5 collapsed two flows (legacy /api/score and the enrich
+              skill) into one Claude call. The page now reflects that: instead
+              of separate "Cold open" / "Why warm" / "Site audit" / "Enrichment"
+              cards, everything lives in one panel in the order Claude generated:
+              score+reasoning → site audit → pitch → diagnosis → cold message. */}
+          {(lead.score || enrichment) ? (
+            <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-4">
+              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                Enrichment
               </h2>
-              {lead.score_label && (
-                <div className="text-sm font-medium text-foreground mb-2">
-                  {lead.score_label}
+
+              {enrichment?.chain_flag_reason && (
+                <p className="text-xs text-muted-foreground bg-secondary border border-border rounded-xl px-3 py-2">
+                  Chain flag: {enrichment.chain_flag_reason}
+                </p>
+              )}
+
+              {/* Why hot/warm/cold — score_label + reasoning */}
+              {lead.score && (
+                <div>
+                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
+                    {WHY_LABEL[lead.score]}
+                  </div>
+                  {lead.score_label && (
+                    <div className="text-sm font-medium text-foreground mb-1">
+                      {lead.score_label}
+                    </div>
+                  )}
+                  {lead.reasoning && (
+                    <p className="text-sm text-muted-foreground leading-relaxed">{lead.reasoning}</p>
+                  )}
                 </div>
               )}
-              {lead.reasoning && (
-                <p className="text-sm text-muted-foreground">{lead.reasoning}</p>
-              )}
+
+              {/* Site audit findings (collapsible) */}
               {lead.site_audit && lead.site_audit.length > 0 && (
-                <details className="group mt-3">
+                <details className="group">
                   <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1">
                     <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
                     Site audit ({lead.site_audit.length} findings)
                   </summary>
                   <ul className="mt-2 pl-4 list-disc space-y-1">
                     {lead.site_audit.map((finding: string, i: number) => (
-                      <li key={i} className="text-xs text-muted-foreground">{finding}</li>
+                      <li key={i} className="text-xs text-muted-foreground leading-relaxed">{finding}</li>
                     ))}
                   </ul>
                 </details>
               )}
+
               {lead.scrape_error && (
-                <p className="text-xs text-muted-foreground/60 mt-2">
-                  Site couldn&apos;t be crawled when this lead was scored — audit data unavailable.
+                <p className="text-xs text-muted-foreground/60">
+                  Site couldn&apos;t be crawled — audit data unavailable.
                 </p>
               )}
-            </div>
-          )}
 
-          {/* No score yet */}
-          {!lead.score && (
+              {/* Internal pitch — short operator-facing summary */}
+              {lead.pitch && (
+                <div>
+                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
+                    Pitch
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{lead.pitch}</p>
+                </div>
+              )}
+
+              {/* Diagnosis — narrative ~50 words */}
+              {enrichment?.diagnosis && (
+                <div>
+                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
+                    Diagnosis
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{enrichment.diagnosis}</p>
+                </div>
+              )}
+
+              {/* Cold message — outbound, what gets sent to the lead */}
+              {enrichment?.cold_message && (
+                <div>
+                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
+                    Cold message
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    {enrichment.cold_message}
+                  </p>
+                </div>
+              )}
+
+              {/* Re-enrich trigger — additive (creates a new enrichments row,
+                  preserves history). Latest run's content is what's rendered above. */}
+              <div className="pt-3 border-t border-border">
+                <ScoreButton
+                  lead={{
+                    id: lead.id,
+                    name: lead.name,
+                    address: lead.address ?? null,
+                    website: lead.website ?? null,
+                    phone: lead.phone ?? null,
+                  }}
+                  alreadyEnriched
+                />
+              </div>
+            </div>
+          ) : (
+            // No enrichment yet — surface the trigger button.
             <div className="bg-card border border-border rounded-2xl p-4">
               <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
-                Score
+                Enrichment
               </h2>
               <p className="text-sm text-muted-foreground mb-3">
-                No score yet. Run AI analysis to evaluate this lead.
+                Not enriched yet. Run AI analysis to score this lead and draft a cold open.
               </p>
               <ScoreButton
                 lead={{
@@ -179,7 +233,7 @@ export default async function LeadDetailPage({
             </div>
           )}
 
-          {/* Pipeline outputs — Phase 3.1 surface for skill-driven enrichment/mockup/video */}
+          {/* Pipeline outputs — mockup + walkthrough video */}
           {video && (
             <div className="bg-card border border-border rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
@@ -226,36 +280,6 @@ export default async function LeadDetailPage({
             </div>
           )}
 
-          {enrichment && (enrichment.diagnosis || enrichment.cold_message) && (
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
-                Enrichment
-              </h2>
-              {enrichment.chain_flag_reason && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  Chain flag: {enrichment.chain_flag_reason}
-                </p>
-              )}
-              {enrichment.diagnosis && (
-                <div className="mb-3">
-                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
-                    Diagnosis
-                  </div>
-                  <p className="text-sm text-foreground leading-relaxed">{enrichment.diagnosis}</p>
-                </div>
-              )}
-              {enrichment.cold_message && (
-                <div>
-                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
-                    Cold message
-                  </div>
-                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
-                    {enrichment.cold_message}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Right column */}
