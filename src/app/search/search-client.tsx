@@ -1,24 +1,24 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { EnrichProgress } from '@/components/enrich-progress'
-import { PlaceResult, ScoreResult } from '@/types/lead'
-import { cn } from '@/lib/utils'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { EnrichProgress } from '@/components/enrich-progress';
+import { PlaceResult, ScoreResult } from '@/types/lead';
+import { cn } from '@/lib/utils';
 
 interface ScoredResult extends PlaceResult {
-  scoreData?: ScoreResult
-  area_label?: string | null
-  area_lat?: number
-  area_lng?: number
+  scoreData?: ScoreResult;
+  area_label?: string | null;
+  area_lat?: number;
+  area_lng?: number;
 }
 
 interface DiscoverStats {
-  discovered: number
-  after_top_skip: number
-  after_dedupe: number
-  after_filters: number
+  discovered: number;
+  after_top_skip: number;
+  after_dedupe: number;
+  after_filters: number;
 }
 
 const NICHE_PRESETS = [
@@ -35,79 +35,94 @@ const NICHE_PRESETS = [
   'real-estate-agent',
   'photographer',
   'event-venue',
-] as const
+] as const;
 
 const inputCls =
-  'flex-1 min-w-[160px] bg-background border border-border rounded-full px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors'
+  'flex-1 min-w-[160px] bg-background border border-border rounded-full px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors';
 
 const SCORE_BADGE_CLS = {
   hot: 'bg-[var(--score-hot-bg)] text-[var(--score-hot-fg)]',
   warm: 'bg-[var(--score-warm-bg)] text-[var(--score-warm-fg)]',
   cold: 'bg-[var(--score-cold-bg)] text-[var(--score-cold-fg)] border border-[var(--score-cold-border)]',
-}
+};
 
 export function SearchClient({
   initialSavedPlaceIds,
 }: {
-  initialSavedPlaceIds: string[]
+  initialSavedPlaceIds: string[];
 }) {
-  const router = useRouter()
+  const router = useRouter();
 
   // Mode toggle: 'simple' = legacy single-business browse, 'discover' = niche+area+filters batch.
-  const [mode, setMode] = useState<'simple' | 'discover'>('discover')
+  const [mode, setMode] = useState<'simple' | 'discover'>('discover');
 
   // Simple-mode fields (legacy)
-  const [businessType, setBusinessType] = useState('')
-  const [location, setLocation] = useState('')
-  const [radius, setRadius] = useState('5mi')
+  const [businessType, setBusinessType] = useState('');
+  const [location, setLocation] = useState('');
+  const [radius, setRadius] = useState('5mi');
 
   // Discover-mode fields
-  const [niche, setNiche] = useState<string>('roofer')
-  const [customNiche, setCustomNiche] = useState('')
-  const [city, setCity] = useState('')
-  const [areasInput, setAreasInput] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [maxReviews, setMaxReviews] = useState(50)
-  const [minRating, setMinRating] = useState(4.0)
-  const [hasWebsite, setHasWebsite] = useState<'any' | 'none' | 'present'>('any')
-  const [skipTopN, setSkipTopN] = useState(3)
+  const [niche, setNiche] = useState<string>('roofer');
+  const [customNiche, setCustomNiche] = useState('');
+  const [city, setCity] = useState('');
+  const [areasInput, setAreasInput] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [maxReviews, setMaxReviews] = useState(50);
+  const [minRating, setMinRating] = useState(4.0);
+  const [hasWebsite, setHasWebsite] = useState<'any' | 'none' | 'present'>(
+    'any'
+  );
+  const [skipTopN, setSkipTopN] = useState(3);
 
   // Shared
-  const [results, setResults] = useState<ScoredResult[]>([])
-  const [discoverStats, setDiscoverStats] = useState<DiscoverStats | null>(null)
+  const [results, setResults] = useState<ScoredResult[]>([]);
+  const [discoverStats, setDiscoverStats] = useState<DiscoverStats | null>(
+    null
+  );
   const [savedPlaceIds, setSavedPlaceIds] = useState(
     new Set(initialSavedPlaceIds)
-  )
-  const [savedLeadIds, setSavedLeadIds] = useState<Record<string, string>>({})
-  const [scoringId, setScoringId] = useState<string | null>(null)
-  const [scoringPhase, setScoringPhase] = useState<'crawling' | 'scoring' | null>(null)
-  const [scrapeNotices, setScrapeNotices] = useState<Record<string, string>>({})
-  const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({})
-  const [savingId, setSavingId] = useState<string | null>(null)
-  const [searching, setSearching] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [nextPageToken, setNextPageToken] = useState<string | null>(null)
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [hasSearched, setHasSearched] = useState(false)
-  const [bulkAction, setBulkAction] = useState<'idle' | 'saving' | 'enriching'>('idle')
-  const [bulkProgress, setBulkProgress] = useState<{ inserted: number; skipped: number } | null>(null)
+  );
+  const [savedLeadIds, setSavedLeadIds] = useState<Record<string, string>>({});
+  const [scoringId, setScoringId] = useState<string | null>(null);
+  const [scoringPhase, setScoringPhase] = useState<
+    'crawling' | 'scoring' | null
+  >(null);
+  const [scrapeNotices, setScrapeNotices] = useState<Record<string, string>>(
+    {}
+  );
+  const [scoreErrors, setScoreErrors] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'idle' | 'saving' | 'enriching'>(
+    'idle'
+  );
+  const [bulkProgress, setBulkProgress] = useState<{
+    inserted: number;
+    skipped: number;
+  } | null>(null);
 
   // Per-result mockup state — keyed by placeId since saved lead ids may not be known yet.
-  const [generatingMockupId, setGeneratingMockupId] = useState<string | null>(null)
-  const [mockupUrls, setMockupUrls] = useState<Record<string, string>>({})
-  const [mockupErrors, setMockupErrors] = useState<Record<string, string>>({})
+  const [generatingMockupId, setGeneratingMockupId] = useState<string | null>(
+    null
+  );
+  const [mockupUrls, setMockupUrls] = useState<Record<string, string>>({});
+  const [mockupErrors, setMockupErrors] = useState<Record<string, string>>({});
   // Track which placeIds have just completed an enrich, so the progress bar can snap to 100% then fade.
-  const [enrichDone, setEnrichDone] = useState<Record<string, boolean>>({})
+  const [enrichDone, setEnrichDone] = useState<Record<string, boolean>>({});
 
   async function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
-    setSearching(true)
-    setSearchError(null)
-    setResults([])
-    setNextPageToken(null)
-    setDiscoverStats(null)
-    setBulkProgress(null)
-    setHasSearched(true)
+    e.preventDefault();
+    setSearching(true);
+    setSearchError(null);
+    setResults([]);
+    setNextPageToken(null);
+    setDiscoverStats(null);
+    setBulkProgress(null);
+    setHasSearched(true);
 
     const body =
       mode === 'discover'
@@ -125,39 +140,41 @@ export function SearchClient({
               skip_top_n: skipTopN,
             },
           }
-        : { businessType, location, radius }
+        : { businessType, location, radius };
 
     const res = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    })
+    });
 
-    setSearching(false)
+    setSearching(false);
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      setSearchError(err.error ?? 'Search failed. Check your API key and try again.')
-      return
+      const err = await res.json().catch(() => ({}));
+      setSearchError(
+        err.error ?? 'Search failed. Check your API key and try again.'
+      );
+      return;
     }
 
-    const data = await res.json()
-    setResults(data.results ?? [])
-    setNextPageToken(data.nextPageToken ?? null)
-    if (data.stats) setDiscoverStats(data.stats)
+    const data = await res.json();
+    setResults(data.results ?? []);
+    setNextPageToken(data.nextPageToken ?? null);
+    if (data.stats) setDiscoverStats(data.stats);
   }
 
   // Bulk save all unsaved results via /api/leads/bulk. Discover-mode only —
   // simple-mode results don't have niche/area_label and would create orphan rows.
   async function handleBulkSave(thenEnrich: boolean) {
-    const unsaved = results.filter((r) => !savedPlaceIds.has(r.placeId))
-    if (unsaved.length === 0) return
+    const unsaved = results.filter((r) => !savedPlaceIds.has(r.placeId));
+    if (unsaved.length === 0) return;
 
-    setBulkAction(thenEnrich ? 'enriching' : 'saving')
-    setBulkProgress(null)
-    setSearchError(null)
+    setBulkAction(thenEnrich ? 'enriching' : 'saving');
+    setBulkProgress(null);
+    setSearchError(null);
 
-    const niches = niche === '__custom__' ? customNiche.trim() : niche
+    const niches = niche === '__custom__' ? customNiche.trim() : niche;
     const payload = {
       leads: unsaved.map((r) => ({
         place_id: r.placeId,
@@ -173,34 +190,35 @@ export function SearchClient({
         review_count: r.reviewCount,
         maps_url: r.mapsUrl,
       })),
-    }
+    };
 
     const res = await fetch('/api/leads/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    })
+    });
 
     if (!res.ok) {
-      setBulkAction('idle')
-      setSearchError('Bulk save failed.')
-      return
+      setBulkAction('idle');
+      setSearchError('Bulk save failed.');
+      return;
     }
 
-    const data: { inserted: number; skipped: number; lead_ids: string[] } = await res.json()
-    setBulkProgress({ inserted: data.inserted, skipped: data.skipped })
+    const data: { inserted: number; skipped: number; lead_ids: string[] } =
+      await res.json();
+    setBulkProgress({ inserted: data.inserted, skipped: data.skipped });
 
     // Mark all as saved client-side so Save buttons disappear
     setSavedPlaceIds((prev) => {
-      const next = new Set(prev)
-      for (const r of unsaved) next.add(r.placeId)
-      return next
-    })
+      const next = new Set(prev);
+      for (const r of unsaved) next.add(r.placeId);
+      return next;
+    });
 
     if (!thenEnrich) {
-      setBulkAction('idle')
-      router.refresh()
-      return
+      setBulkAction('idle');
+      router.refresh();
+      return;
     }
 
     // Enrich each newly inserted lead. Sequential to respect Anthropic rate limits.
@@ -208,36 +226,41 @@ export function SearchClient({
       await fetch(`/api/leads/${leadId}/enrich`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-      }).catch(() => null) // best-effort; UI continues
+      }).catch(() => null); // best-effort; UI continues
     }
 
-    setBulkAction('idle')
-    router.refresh()
+    setBulkAction('idle');
+    router.refresh();
   }
 
   async function handleLoadMore() {
-    if (!nextPageToken) return
-    setLoadingMore(true)
+    if (!nextPageToken) return;
+    setLoadingMore(true);
 
     // Google requires ~2s between page requests
-    await new Promise((r) => setTimeout(r, 2000))
+    await new Promise((r) => setTimeout(r, 2000));
 
     const res = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ businessType, location, pageToken: nextPageToken }),
-    })
+      body: JSON.stringify({
+        businessType,
+        location,
+        pageToken: nextPageToken,
+      }),
+    });
 
-    setLoadingMore(false)
+    setLoadingMore(false);
 
     if (!res.ok) {
-      setSearchError('Failed to load more results.')
-      return
+      setSearchError('Failed to load more results.');
+      return;
     }
 
-    const data: { results: PlaceResult[]; nextPageToken: string | null } = await res.json()
-    setResults((prev) => [...prev, ...data.results])
-    setNextPageToken(data.nextPageToken)
+    const data: { results: PlaceResult[]; nextPageToken: string | null } =
+      await res.json();
+    setResults((prev) => [...prev, ...data.results]);
+    setNextPageToken(data.nextPageToken);
   }
 
   // Per-result Enrich. Replaces the legacy score-only flow:
@@ -246,74 +269,80 @@ export function SearchClient({
   //     persist enrichments row + mirror CRM fields + bump status='enriched'
   //  3. Reflect score data on the result card so UI stays informative
   async function handleScore(result: ScoredResult) {
-    setScoringId(result.placeId)
-    setScoringPhase(null)
+    setScoringId(result.placeId);
+    setScoringPhase(null);
     setScoreErrors((prev) => {
-      const next = { ...prev }
-      delete next[result.placeId]
-      return next
-    })
+      const next = { ...prev };
+      delete next[result.placeId];
+      return next;
+    });
     setScrapeNotices((prev) => {
-      const next = { ...prev }
-      delete next[result.placeId]
-      return next
-    })
+      const next = { ...prev };
+      delete next[result.placeId];
+      return next;
+    });
 
     // Ensure lead is saved first — the enrich endpoint operates on a lead row.
-    let leadId = savedLeadIds[result.placeId]
+    let leadId = savedLeadIds[result.placeId];
     if (!leadId) {
-      setScoringPhase('crawling')
-      await handleSave(result)
+      setScoringPhase('crawling');
+      await handleSave(result);
       // handleSave updates state asynchronously; re-read from a fresh fetch
       // in the closure isn't reliable. Look it up via the API instead.
-      const lookup = await fetch(`/api/leads?status=discovered&scope=mine&limit=200`, {
-        credentials: 'include',
-      })
+      const lookup = await fetch(
+        `/api/leads?status=discovered&scope=mine&limit=200`,
+        {
+          credentials: 'include',
+        }
+      );
       if (lookup.ok) {
-        const leads = (await lookup.json()) as Array<{ id: string; place_id: string | null }>
-        const found = leads.find((l) => l.place_id === result.placeId)
-        if (found) leadId = found.id
+        const leads = (await lookup.json()) as Array<{
+          id: string;
+          place_id: string | null;
+        }>;
+        const found = leads.find((l) => l.place_id === result.placeId);
+        if (found) leadId = found.id;
       }
     }
 
     if (!leadId) {
-      setScoringId(null)
+      setScoringId(null);
       setScoreErrors((prev) => ({
         ...prev,
         [result.placeId]: 'Could not save lead before enriching',
-      }))
-      return
+      }));
+      return;
     }
 
-    setScoringPhase('scoring')
+    setScoringPhase('scoring');
 
     const res = await fetch(`/api/leads/${leadId}/enrich`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    })
+    });
 
-    setScoringId(null)
-    setScoringPhase(null)
+    setScoringId(null);
+    setScoringPhase(null);
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+      const body = await res.json().catch(() => ({ error: 'Unknown error' }));
       setScoreErrors((prev) => ({
         ...prev,
         [result.placeId]: body.error ?? "Couldn't enrich this one — try again?",
-      }))
-      return
+      }));
+      return;
     }
 
     // Reflect on the card — the API returns the parsed Claude output.
     const data = (await res.json()) as {
       enrichment: {
-        score: 'hot' | 'warm' | 'cold'
-        score_label: string
-        reasoning: string
-        pitch: string
-        site_audit: string[]
-      }
-    }
+        score: 'hot' | 'warm' | 'cold';
+        score_label: string;
+        reasoning: string;
+        pitch: string;
+        site_audit: string[];
+      };
+    };
     setResults((prev) =>
       prev.map((r) =>
         r.placeId === result.placeId
@@ -329,70 +358,70 @@ export function SearchClient({
             }
           : r
       )
-    )
+    );
 
     // Snap progress bar to 100, then clear the done flag after the fade so
     // re-enriching this card later starts fresh.
-    setEnrichDone((prev) => ({ ...prev, [result.placeId]: true }))
+    setEnrichDone((prev) => ({ ...prev, [result.placeId]: true }));
     setTimeout(() => {
       setEnrichDone((prev) => {
-        const next = { ...prev }
-        delete next[result.placeId]
-        return next
-      })
-    }, 1200)
+        const next = { ...prev };
+        delete next[result.placeId];
+        return next;
+      });
+    }, 1200);
   }
 
   // Per-result Mockup generation. Requires the lead to be enriched first.
   // Calls POST /api/mockups; the API derives props from the latest enrichment.
   async function handleMockup(result: ScoredResult) {
-    const leadId = savedLeadIds[result.placeId]
+    const leadId = savedLeadIds[result.placeId];
     if (!leadId) {
       setMockupErrors((prev) => ({
         ...prev,
         [result.placeId]: 'Save and enrich first',
-      }))
-      return
+      }));
+      return;
     }
 
-    setGeneratingMockupId(result.placeId)
+    setGeneratingMockupId(result.placeId);
     setMockupErrors((prev) => {
-      const next = { ...prev }
-      delete next[result.placeId]
-      return next
-    })
+      const next = { ...prev };
+      delete next[result.placeId];
+      return next;
+    });
 
     const res = await fetch('/api/mockups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lead_id: leadId }),
-    })
+    });
 
-    setGeneratingMockupId(null)
+    setGeneratingMockupId(null);
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+      const body = await res.json().catch(() => ({ error: 'Unknown error' }));
       setMockupErrors((prev) => ({
         ...prev,
         [result.placeId]: body.error ?? "Couldn't generate mockup",
-      }))
-      return
+      }));
+      return;
     }
 
-    const data = (await res.json()) as { slug: string; public_url: string }
-    setMockupUrls((prev) => ({ ...prev, [result.placeId]: data.public_url }))
+    const data = (await res.json()) as { slug: string; public_url: string };
+    setMockupUrls((prev) => ({ ...prev, [result.placeId]: data.public_url }));
     // Open in a new tab so the operator can immediately review
-    window.open(data.public_url, '_blank', 'noopener,noreferrer')
+    window.open(data.public_url, '_blank', 'noopener,noreferrer');
   }
 
   async function handleSave(result: ScoredResult) {
-    setSavingId(result.placeId)
+    setSavingId(result.placeId);
 
     // In discover mode, prefer /api/leads/bulk so the same code path that
     // populates niche + area_label + place_data is used for single-result
     // cherry-picks. Falls through to legacy /api/leads POST in browse mode.
     if (mode === 'discover') {
-      const niches = niche === '__custom__' ? customNiche.trim() : niche
+      const niches = niche === '__custom__' ? customNiche.trim() : niche;
       const res = await fetch('/api/leads/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -414,18 +443,22 @@ export function SearchClient({
             },
           ],
         }),
-      })
+      });
 
-      setSavingId(null)
+      setSavingId(null);
 
       if (res.ok) {
-        const data: { inserted: number; skipped: number; lead_ids: string[] } = await res.json()
-        setSavedPlaceIds((prev) => new Set([...prev, result.placeId]))
+        const data: { inserted: number; skipped: number; lead_ids: string[] } =
+          await res.json();
+        setSavedPlaceIds((prev) => new Set([...prev, result.placeId]));
         if (data.lead_ids[0]) {
-          setSavedLeadIds((prev) => ({ ...prev, [result.placeId]: data.lead_ids[0] }))
+          setSavedLeadIds((prev) => ({
+            ...prev,
+            [result.placeId]: data.lead_ids[0],
+          }));
         }
       }
-      return
+      return;
     }
 
     // Browse mode — legacy single-result path. No niche/area data available
@@ -445,16 +478,16 @@ export function SearchClient({
         reasoning: result.scoreData?.reasoning ?? null,
         pitch: result.scoreData?.pitch ?? null,
       }),
-    })
+    });
 
-    setSavingId(null)
+    setSavingId(null);
 
     if (res.ok || res.status === 409) {
-      setSavedPlaceIds((prev) => new Set([...prev, result.placeId]))
+      setSavedPlaceIds((prev) => new Set([...prev, result.placeId]));
       if (res.ok) {
-        const saved = await res.json().catch(() => null)
+        const saved = await res.json().catch(() => null);
         if (saved?.id) {
-          setSavedLeadIds((prev) => ({ ...prev, [result.placeId]: saved.id }))
+          setSavedLeadIds((prev) => ({ ...prev, [result.placeId]: saved.id }));
         }
       }
     }
@@ -593,7 +626,9 @@ export function SearchClient({
                     type="number"
                     min={1}
                     value={maxReviews}
-                    onChange={(e) => setMaxReviews(parseInt(e.target.value) || 50)}
+                    onChange={(e) =>
+                      setMaxReviews(parseInt(e.target.value) || 50)
+                    }
                     className="bg-background border border-border rounded-full px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
                   />
                 </label>
@@ -605,7 +640,9 @@ export function SearchClient({
                     max={5}
                     step={0.1}
                     value={minRating}
-                    onChange={(e) => setMinRating(parseFloat(e.target.value) || 4.0)}
+                    onChange={(e) =>
+                      setMinRating(parseFloat(e.target.value) || 4.0)
+                    }
                     className="bg-background border border-border rounded-full px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
                   />
                 </label>
@@ -613,7 +650,11 @@ export function SearchClient({
                   Website
                   <select
                     value={hasWebsite}
-                    onChange={(e) => setHasWebsite(e.target.value as 'any' | 'none' | 'present')}
+                    onChange={(e) =>
+                      setHasWebsite(
+                        e.target.value as 'any' | 'none' | 'present'
+                      )
+                    }
                     className="bg-background border border-border rounded-full px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
                   >
                     <option value="any">Any</option>
@@ -642,23 +683,33 @@ export function SearchClient({
       {mode === 'discover' && discoverStats && results.length > 0 && (
         <div className="bg-secondary/40 border border-border rounded-2xl px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-mono text-muted-foreground">
-            {discoverStats.discovered} raw → {discoverStats.after_top_skip} after top-{skipTopN} skip → {discoverStats.after_dedupe} deduped → {discoverStats.after_filters} after filters
+            {discoverStats.discovered} raw → {discoverStats.after_top_skip}{' '}
+            after top-{skipTopN} skip → {discoverStats.after_dedupe} deduped →{' '}
+            {discoverStats.after_filters} after filters
           </p>
           <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
               onClick={() => handleBulkSave(false)}
-              disabled={bulkAction !== 'idle' || results.every((r) => savedPlaceIds.has(r.placeId))}
+              disabled={
+                bulkAction !== 'idle' ||
+                results.every((r) => savedPlaceIds.has(r.placeId))
+              }
             >
               {bulkAction === 'saving' ? 'Saving…' : 'Save all'}
             </Button>
             <Button
               size="sm"
               onClick={() => handleBulkSave(true)}
-              disabled={bulkAction !== 'idle' || results.every((r) => savedPlaceIds.has(r.placeId))}
+              disabled={
+                bulkAction !== 'idle' ||
+                results.every((r) => savedPlaceIds.has(r.placeId))
+              }
             >
-              {bulkAction === 'enriching' ? 'Saving + enriching…' : 'Save all + enrich'}
+              {bulkAction === 'enriching'
+                ? 'Saving + enriching…'
+                : 'Save all + enrich'}
             </Button>
           </div>
         </div>
@@ -666,8 +717,11 @@ export function SearchClient({
 
       {bulkProgress && (
         <div className="bg-secondary/40 border border-border rounded-2xl px-4 py-3 mb-4 text-xs text-muted-foreground">
-          Saved {bulkProgress.inserted} new lead{bulkProgress.inserted === 1 ? '' : 's'}
-          {bulkProgress.skipped > 0 && `, skipped ${bulkProgress.skipped} already in pipeline`}.
+          Saved {bulkProgress.inserted} new lead
+          {bulkProgress.inserted === 1 ? '' : 's'}
+          {bulkProgress.skipped > 0 &&
+            `, skipped ${bulkProgress.skipped} already in pipeline`}
+          .
         </div>
       )}
 
@@ -704,11 +758,11 @@ export function SearchClient({
             {results.length} results
           </p>
           {results.map((result) => {
-            const isSaved = savedPlaceIds.has(result.placeId)
-            const isScoring = scoringId === result.placeId
-            const isSaving = savingId === result.placeId
-            const scored = result.scoreData
-            const scoreError = scoreErrors[result.placeId]
+            const isSaved = savedPlaceIds.has(result.placeId);
+            const isScoring = scoringId === result.placeId;
+            const isSaving = savingId === result.placeId;
+            const scored = result.scoreData;
+            const scoreError = scoreErrors[result.placeId];
 
             return (
               <div
@@ -717,8 +771,12 @@ export function SearchClient({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="font-medium text-foreground">{result.name}</div>
-                    <div className="text-sm text-muted-foreground mt-0.5">{result.address}</div>
+                    <div className="font-medium text-foreground">
+                      {result.name}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-0.5">
+                      {result.address}
+                    </div>
                     <div className="flex gap-3 mt-2 flex-wrap items-center">
                       {result.phone && (
                         <a
@@ -780,11 +838,15 @@ export function SearchClient({
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const existing = mockupUrls[result.placeId]
+                          const existing = mockupUrls[result.placeId];
                           if (existing) {
-                            window.open(existing, '_blank', 'noopener,noreferrer')
+                            window.open(
+                              existing,
+                              '_blank',
+                              'noopener,noreferrer'
+                            );
                           } else {
-                            handleMockup(result)
+                            handleMockup(result);
                           }
                         }}
                         disabled={generatingMockupId === result.placeId}
@@ -792,8 +854,8 @@ export function SearchClient({
                         {generatingMockupId === result.placeId
                           ? 'Building…'
                           : mockupUrls[result.placeId]
-                          ? 'Open mockup ↗'
-                          : '✦ Mockup'}
+                            ? 'Open mockup ↗'
+                            : '✦ Mockup'}
                       </Button>
                     )}
                     {isSaved ? (
@@ -846,33 +908,48 @@ export function SearchClient({
                       <span
                         className={cn(
                           'text-xs px-2.5 py-1 rounded-full font-medium',
-                          SCORE_BADGE_CLS[scored.score as keyof typeof SCORE_BADGE_CLS] ?? ''
+                          SCORE_BADGE_CLS[
+                            scored.score as keyof typeof SCORE_BADGE_CLS
+                          ] ?? ''
                         )}
                       >
                         {scored.score}
                       </span>
-                      <span className="text-xs text-muted-foreground">{scored.scoreLabel}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {scored.scoreLabel}
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2.5">{scored.reasoning}</p>
+                    <p className="text-xs text-muted-foreground mb-2.5">
+                      {scored.reasoning}
+                    </p>
                     <div className="bg-secondary border border-border rounded-xl px-3 py-2.5 text-xs text-foreground mb-2.5">
                       &ldquo;{scored.pitch}&rdquo;
                     </div>
                     {scored.pitchBullets && scored.pitchBullets.length > 0 && (
                       <ul className="mb-2.5 pl-4 list-disc space-y-1">
                         {scored.pitchBullets.map((bullet, i) => (
-                          <li key={i} className="text-xs text-muted-foreground">{bullet}</li>
+                          <li key={i} className="text-xs text-muted-foreground">
+                            {bullet}
+                          </li>
                         ))}
                       </ul>
                     )}
                     {scored.siteAudit && scored.siteAudit.length > 0 && (
                       <details className="group">
                         <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1">
-                          <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                          <span className="group-open:rotate-90 transition-transform inline-block">
+                            ▶
+                          </span>
                           Site audit ({scored.siteAudit.length} findings)
                         </summary>
                         <ul className="mt-2 pl-4 list-disc space-y-1">
                           {scored.siteAudit.map((finding, i) => (
-                            <li key={i} className="text-xs text-muted-foreground">{finding}</li>
+                            <li
+                              key={i}
+                              className="text-xs text-muted-foreground"
+                            >
+                              {finding}
+                            </li>
                           ))}
                         </ul>
                       </details>
@@ -880,7 +957,7 @@ export function SearchClient({
                   </div>
                 )}
               </div>
-            )
+            );
           })}
           {nextPageToken && (
             <div className="flex justify-center pt-2">
@@ -896,5 +973,5 @@ export function SearchClient({
         </div>
       )}
     </div>
-  )
+  );
 }
