@@ -37,14 +37,40 @@ export default async function LeadDetailPage({
 
   const { data } = await supabaseAdmin
     .from('leads')
-    .select('*')
+    .select('*, enrichments(*), mockups(*), videos(*)')
     .eq('id', id)
     .eq('user_id', session!.user.id)
     .single()
 
   if (!data) notFound()
 
-  const lead = data as Lead
+  const lead = data as Lead & {
+    enrichments?: Array<{
+      id: string
+      diagnosis: string | null
+      cold_message: string | null
+      site_brief: Record<string, unknown> | null
+      chain_flag_reason: string | null
+      created_at: string
+    }>
+    mockups?: Array<{
+      id: string
+      slug: string
+      published_at: string | null
+      created_at: string
+    }>
+    videos?: Array<{
+      id: string
+      public_url: string
+      duration_seconds: number | null
+      created_at: string
+    }>
+  }
+
+  // Pick the most recent of each related row
+  const enrichment = lead.enrichments?.[0] ?? null
+  const mockup = lead.mockups?.find((m) => m.published_at) ?? null
+  const video = lead.videos?.[0] ?? null
 
   return (
     <div className="max-w-5xl mx-auto p-6 animate-fade-up">
@@ -150,6 +176,84 @@ export default async function LeadDetailPage({
                   phone: lead.phone ?? null,
                 }}
               />
+            </div>
+          )}
+
+          {/* Pipeline outputs — Phase 3.1 surface for skill-driven enrichment/mockup/video */}
+          {video && (
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                  Walkthrough video
+                </h2>
+                {video.duration_seconds != null && (
+                  <span className="text-xs text-muted-foreground">{video.duration_seconds}s</span>
+                )}
+              </div>
+              <video
+                src={video.public_url}
+                controls
+                preload="metadata"
+                className="w-full rounded-xl border border-border bg-secondary"
+              />
+              <a
+                href={video.public_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Open MP4 ↗
+              </a>
+            </div>
+          )}
+
+          {mockup && (
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                  Mockup site
+                </h2>
+                <span className="text-xs text-muted-foreground">/{mockup.slug}</span>
+              </div>
+              <a
+                href={`/m/${mockup.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-foreground hover:text-muted-foreground break-all transition-colors"
+              >
+                {`/m/${mockup.slug}`} ↗
+              </a>
+            </div>
+          )}
+
+          {enrichment && (enrichment.diagnosis || enrichment.cold_message) && (
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-[0.08em] mb-3">
+                Enrichment
+              </h2>
+              {enrichment.chain_flag_reason && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  Chain flag: {enrichment.chain_flag_reason}
+                </p>
+              )}
+              {enrichment.diagnosis && (
+                <div className="mb-3">
+                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
+                    Diagnosis
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{enrichment.diagnosis}</p>
+                </div>
+              )}
+              {enrichment.cold_message && (
+                <div>
+                  <div className="text-xs font-mono text-muted-foreground uppercase tracking-[0.08em] mb-1">
+                    Cold message
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    {enrichment.cold_message}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
