@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
   let query = supabaseAdmin
     .from('leads')
-    .select('*, enrichments(*)')
+    .select('*, enrichments(*), mockups(*), videos(*)')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
