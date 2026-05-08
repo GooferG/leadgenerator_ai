@@ -30,13 +30,36 @@ export interface SiteBrief {
   design_choice: string
 }
 
+// Site content scraped from the lead's website (subset of /api/scrape output).
+// Claude reads this when deciding what's wrong with the current site and what
+// the mockup should fix.
+export interface ScrapedSite {
+  title: string | null
+  description: string | null
+  hasViewport: boolean
+  ogTags: Record<string, string>
+  bodyText: string
+}
+
 // Shape Claude returns. Either chain-flagged (skip the rest) or fully enriched.
+// Phase 3.5: now also produces score + site_audit + pitch (operator-facing) so
+// a single Claude call covers both the legacy CRM fields on `leads` AND the new
+// `enrichments` row.
 export interface ClaudeEnrichment {
   is_chain: boolean
   chain_flag_reason: string | null
+
+  // CRM-facing (mirrored to leads table)
+  score: 'hot' | 'warm' | 'cold'
+  score_label: string  // e.g. "ready-to-buy", "needs nurturing"
+  reasoning: string    // explains why hot/warm/cold
+  pitch: string        // 1-2 line internal pitch summary for the operator
+  site_audit: string[] // bullet list of concrete issues with the current site
+
+  // Pipeline-facing (persisted to enrichments table)
   diagnosis: string
   site_brief: SiteBrief
-  cold_message: string
+  cold_message: string  // outbound; what gets sent to the lead
 }
 
 export interface EnrichmentResult {

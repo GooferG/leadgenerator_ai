@@ -1,10 +1,13 @@
-// Fetch leads with status='discovered' from Hook for the enrichment skill.
-// Uses the service-key auth path so the skill can run from outside a browser.
+// Fetch leads from Hook for the enrichment skill.
+// Default: status='discovered'. Pass status='enriched' (via --force in run.ts)
+// to re-process leads that already have an enrichment row — used after prompt
+// changes to refresh existing data.
 
 import type { DiscoveredLead } from './types'
 
 interface FetchOpts {
   batch_size: number
+  status?: string
   niche?: string
   area_label?: string
   baseUrl?: string
@@ -16,7 +19,7 @@ export async function fetchDiscoveredLeads(opts: FetchOpts): Promise<DiscoveredL
   if (!serviceKey) throw new Error('HOOK_SERVICE_API_KEY not set')
 
   const params = new URLSearchParams({
-    status: 'discovered',
+    status: opts.status ?? 'discovered',
     scope: 'all',
     limit: String(opts.batch_size),
   })
