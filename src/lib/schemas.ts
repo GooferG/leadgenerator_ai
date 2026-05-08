@@ -93,3 +93,17 @@ export const MockupInputSchema = z.object({
   // If omitted the API derives props from the lead's latest enrichment.
   props: MockupPropsSchema.optional(),
 })
+
+// Phase 3 — video walkthrough metadata.
+// lThe skill uploads the MP4 directly to Supabase Storage (using the service role
+// key client-side in the skill); this endpoint just records the metadata row
+// and bumps lead.status. We don't accept the binary itself here — keeps the
+// API serverless-friendly (no large payoads, no streaming) and uploads can be
+// retried/resumed on the storage side independently.
+export const VideoInputSchema = z.object({
+  lead_id: z.string().uuid(),
+  mockup_id: z.string().uuid().optional(),
+  storage_path: z.string().min(1),
+  public_url: z.string().url(),
+  duration_seconds: z.number().int().min(1).max(120),
+})

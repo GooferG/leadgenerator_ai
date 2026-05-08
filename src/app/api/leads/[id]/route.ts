@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { hasValidServiceKey } from '@/lib/auth-service'
 
 async function getOwnedLead(id: string, userId: string) {
   const { data } = await supabaseAdmin
@@ -12,25 +13,34 @@ async function getOwnedLead(id: string, userId: string) {
 }
 
 // Single lead with related enrichment, mockup, video, and outreach history.
-// Auth: session. Currently scopes to lead.user_id == session.user.id; the shared-workspace
-// read path will land in Phase 4 alongside the dashboard redesign.
+// Auth: approved session OR x-hook-service-key. Service-key callers (skills)
+// bypass the per-user filter since they operate on the shared workspace.
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
-  if (!session?.user?.approved) {
+  const sessionOk = !!session?.user?.approved
+  const serviceOk = hasValidServiceKey(req)
+
+  if (!sessionOk && !serviceOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { id } = await params
 
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('leads')
     .select('*, enrichments(*), mockups(*), videos(*), outreach_messages(*)')
     .eq('id', id)
-    .eq('user_id', session.user.id)
-    .single()
+
+  // Session callers stay scoped to their own leads to preserve existing
+  // dashboard behavior. Service-key callers see any lead in the workspace.
+  if (sessionOk && !serviceOk) {
+    query = query.eq('user_id', session!.user.id)
+  }
+
+  const { data, error } = await query.single()
 
   if (error || !data) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
